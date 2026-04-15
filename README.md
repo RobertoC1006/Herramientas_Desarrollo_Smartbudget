@@ -4,6 +4,7 @@ Backend — Estructura
 
 Documents\GitHub\SmartBudget\Backend\
 ├── api/
+
 │   ├── main.py                  ← FastAPI app + CORS + routers
 │   ├── dependencies.py           ← DB session injection
 │   ├── routes/
