@@ -33,7 +33,7 @@ Documents\GitHub\SmartBudget\Backend\
 │   └── models.py                ← ORM (User, Budget, Expense, Goal, Alert, SmartScoreSnapshot)
 ├── requirements.txt
 └── .env
-
+## Frontend — Estructura
 mobile/lib/
 ├── main.dart                          ← Entry point + ProviderScope
 ├── app.dart                           ← SmartBudgetApp + locale + theme
