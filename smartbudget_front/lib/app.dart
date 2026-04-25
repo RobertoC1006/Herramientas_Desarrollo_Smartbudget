@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/theme/app_theme.dart';
 import 'features/auth/login_page.dart';
+import 'features/dashboard/main_layout.dart';
 
 final appRouter = GoRouter(
   initialLocation: LoginPage.routePath,
@@ -9,6 +11,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: LoginPage.routePath,
       builder: (context, state) => const LoginPage(),
+    ),
+    GoRoute(
+      path: MainLayout.routePath,
+      builder: (context, state) => const MainLayout(),
     ),
   ],
 );
@@ -19,10 +25,10 @@ class SmartBugdetApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'SmartBugdet',
+      title: 'SmartBudget+',
       debugShowCheckedModeBanner: false,
       routerConfig: appRouter,
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.green),
+      theme: AppTheme.lightTheme(),
     );
   }
 }
