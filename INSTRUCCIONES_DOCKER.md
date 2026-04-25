@@ -28,7 +28,11 @@ El sistema utiliza un archivo `.env` para manejar credenciales y configuraciones
 1. **Crear el archivo `.env`**:
    Copia el archivo de ejemplo proporcionado:
    ```bash
+   # En Mac o Linux:
    cp .env.example .env
+
+   # En Windows (PowerShell):
+   copy .env.example .env
    ```
 
 2. **Generar la `JWT_SECRET_KEY`**:
@@ -53,7 +57,7 @@ El sistema utiliza un archivo `.env` para manejar credenciales y configuraciones
 Desde la carpeta raíz del proyecto, ejecuta el siguiente comando:
 
 ```bash
-docker-compose up --build
+docker compose up --build -d
 ```
 
 > **Nota:** La primera vez tardará unos minutos mientras descarga las imágenes y compila el frontend de Flutter. Las siguientes veces será mucho más rápido.
@@ -90,10 +94,14 @@ Si prefieres usar una herramienta como **DBeaver, MySQL Workbench o TablePlus**,
 
 ## 🔍 Comandos Útiles de Docker
 
-*   **Ver logs en tiempo real**: `docker-compose logs -f`
-*   **Detener todo**: `docker-compose down`
-*   **Reiniciar un solo servicio (ej. backend)**: `docker-compose restart backend`
-*   **Limpiar volúmenes (borrar base de datos)**: `docker-compose down -v`
+*   **Ver logs en tiempo real**: `docker compose logs -f`
+*   **Detener todo**: `docker compose down`
+*   **Limpiar y reiniciar base de datos (BORRA TODO)**: `docker compose down -v`
+*   **Reiniciar un solo servicio (ej. backend)**: `docker compose restart backend`
+
+---
+
+> 💡 **Tip para el equipo:** Si realizas cambios en `db/models.py`, la base de datos de Docker no se actualizará sola. Debes usar el comando **"Limpiar y reiniciar"** para que MySQL se reconstruya con las nuevas tablas.
 
 ---
 
