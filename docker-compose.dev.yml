@@ -1,0 +1,29 @@
+# docker-compose.dev.yml — Override para desarrollo local
+#
+# Este archivo EXTIENDE docker-compose.yml, no lo reemplaza.
+# Solo sobreescribe lo que necesita cambiar para desarrollo.
+#
+# Uso: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Diferencias con producción:
+#   1. Hot reload: el backend se reinicia al guardar un archivo .py
+#   2. Volumen: el código se monta en vivo (no hay que rebuildar la imagen)
+
+version: "3.9"
+
+services:
+  backend:
+    # Monta el código fuente local dentro del contenedor.
+    # Cualquier cambio en ./backend/ se refleja inmediatamente en el contenedor.
+    # No es necesario hacer `docker compose build` cada vez que cambias código.
+    volumes:
+      - ./backend:/app
+
+    # Sobreescribe el CMD del Dockerfile para activar el hot reload.
+    # --reload: uvicorn vigila los archivos .py y reinicia el servidor al detectar cambios.
+    command: >
+      uvicorn api.main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --reload-dir /app
