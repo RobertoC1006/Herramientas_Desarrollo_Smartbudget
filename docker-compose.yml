@@ -1,21 +1,6 @@
-# docker-compose.yml — Orquestador de servicios SmartBudget+
-#
-# Servicios definidos:
-#   mysql    → Base de datos MySQL 8.0 con persistencia en volumen
-#   backend  → FastAPI construida desde backend/Dockerfile
-#   adminer  → UI web para ver MySQL (reemplaza Workbench/phpMyAdmin)
-#
-# Uso:
-#   Producción/Normal:   docker compose up -d
-#   Desarrollo:          docker compose -f docker-compose.yml -f docker-compose.dev.yml up
-#   Ver logs:            docker compose logs -f backend
-#   Parar todo:          docker compose down
-#   Parar + borrar BD:   docker compose down -v  ← CUIDADO: borra los datos
-
-version: "3.9"
+name: smartbudget_plus
 
 services:
-
   # ─── MySQL 8.0 ────────────────────────────────────────────────────────────
   mysql:
     image: mysql:8.0
@@ -27,23 +12,16 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      # Volumen nombrado: los datos persisten aunque el contenedor se reinicie o elimine.
-      # Sin esto, la BD se borra cada vez que haces `docker compose down`.
       - mysql_data:/var/lib/mysql
     ports:
-      # Solo expone el puerto en desarrollo para poder conectarse con herramientas locales.
-      # En producción, quitar esta línea para que MySQL no sea accesible desde fuera.
-      - "3306:3306"
+      - "3307:3306"
     networks:
       - smartbudget_net
     healthcheck:
-      # Docker espera que MySQL esté listo antes de arrancar el backend.
-      # Sin esto, el backend intentaría conectarse antes de que MySQL esté listo → error.
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
 
   # ─── Backend FastAPI ──────────────────────────────────────────────────────
   backend:
@@ -53,40 +31,46 @@ services:
     container_name: smartbudget_backend
     restart: always
     env_file:
-      - .env.docker
+      - .env
     ports:
       - "8000:8000"
     depends_on:
       mysql:
-        # El backend espera que MySQL pase el healthcheck antes de arrancar.
         condition: service_healthy
     networks:
       - smartbudget_net
+    volumes:
+      - ./backend:/app
 
-  # ─── Adminer (reemplaza Workbench) ────────────────────────────────────────
-  # Acceder en: http://localhost:8080
-  # Sistema: MySQL | Servidor: mysql | Usuario y Pass: los del .env.docker
+  # ─── Frontend (Flutter Web / PWA) ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./smartbudget_front
+      dockerfile: Dockerfile
+    container_name: smartbudget_frontend
+    restart: always
+    ports:
+      - "3001:80" # Acceso en http://localhost:3000
+    networks:
+      - smartbudget_net
+    depends_on:
+      - backend
+
+  # ─── Adminer (Gestor BD) ──────────────────────────────────────────────────
   adminer:
     image: adminer:latest
     container_name: smartbudget_adminer
     restart: always
     ports:
-      - "8080:8080"
+      - "8081:8080"
     networks:
       - smartbudget_net
     depends_on:
       - mysql
 
-# ─── Volúmenes ────────────────────────────────────────────────────────────
 volumes:
   mysql_data:
-    # Docker gestiona la ubicación física del volumen en el sistema host.
-    # Los datos sobreviven: reinicios, `docker compose down`, actualizaciones de imagen.
-    # Solo se pierden con: `docker compose down -v` o `docker volume rm mysql_data`
 
-# ─── Redes ───────────────────────────────────────────────────────────────
 networks:
   smartbudget_net:
     driver: bridge
-    # Red interna: los servicios se comunican por nombre (ej: backend → "mysql")
-    # Los contenedores NO son accesibles desde internet, solo entre sí.

@@ -42,7 +42,7 @@ class Budget(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     
     mes: Mapped[int] = mapped_column(Integer) # 1-12
-    año: Mapped[int] = mapped_column(Integer)
+    anio: Mapped[int] = mapped_column(Integer)
     
     monto_base: Mapped[float] = mapped_column(Float, default=0.0)
     ingresos_adicionales: Mapped[float] = mapped_column(Float, default=0.0)
@@ -125,5 +125,5 @@ class SmartScoreSnapshot(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     score: Mapped[int] = mapped_column(Integer) # 0-100
     mes: Mapped[int] = mapped_column(Integer)
-    año: Mapped[int] = mapped_column(Integer)
+    anio: Mapped[int] = mapped_column(Integer)
     fecha_calculo: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
