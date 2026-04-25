@@ -1,41 +1,35 @@
-from db.models import User
-import datetime
+"""
+db/session.py — Gestión de conexión y sesiones de base de datos
 
-class MockQuery:
-    def __init__(self, model_class, db_session):
-        self.model_class = model_class
-        self.db_session = db_session
-    
-    def filter(self, condition):
-        return self
-        
-    def first(self):
-        if self.model_class == User:
-            if getattr(self.db_session, 'last_user', None):
-                return self.db_session.last_user
-            return User(id=1, email="test@test.com", hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjIQqiRQYq")
-        return None
+Este archivo es responsabilidad del DB Master. 
+Establece el motor de conexión (Engine) y la fábrica de sesiones (SessionLocal).
+"""
 
-class MockSessionLocal:
-    def __init__(self):
-        self.last_user = None
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from core.config import settings
 
-    def query(self, model_class):
-        return MockQuery(model_class, self)
-        
-    def add(self, obj):
-        if isinstance(obj, User):
-            self.last_user = obj
-            
-    def commit(self):
-        pass
-        
-    def refresh(self, obj):
-        if isinstance(obj, User):
-            obj.id = 1
-            obj.created_at = datetime.datetime.utcnow()
-            
-    def close(self):
-        pass
+# 1. Crear el motor de conexión (Engine)
+# Usamos pool_pre_ping=True para que SQLAlchemy verifique si la conexión 
+# sigue viva antes de usarla (evita errores tras periodos de inactividad).
+engine = create_engine(
+    settings.DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=3600, # Reinicia conexiones cada hora
+)
 
-SessionLocal = MockSessionLocal
+# 2. Fábrica de sesiones
+# autocommit=False: los cambios no se guardan hasta llamar a db.commit()
+# autoflush=False: no envía cambios a la BD automáticamente antes de cada query
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db_session():
+    """
+    Función de utilidad para obtener una sesión.
+    En FastAPI se usa via Dependencia (Depends).
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
