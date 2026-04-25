@@ -35,6 +35,10 @@ class Settings(BaseSettings):
       Todas las demás.
     """
 
+    # ─── App Info ────────────────────────────────────────────────────────────
+    PROJECT_NAME: str = "SmartBudget+"
+    BACKEND_CORS_ORIGINS: list[str] | str = ["*"]
+
     # ─── Seguridad JWT ──────────────────────────────────────────────────────
     JWT_SECRET_KEY: str
     """

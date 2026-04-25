@@ -1,41 +1,51 @@
-from db.models import User
 import datetime
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+from core.config import settings
 
-class MockQuery:
-    def __init__(self, model_class, db_session):
-        self.model_class = model_class
-        self.db_session = db_session
-    
-    def filter(self, condition):
-        return self
-        
-    def first(self):
-        if self.model_class == User:
-            if getattr(self.db_session, 'last_user', None):
-                return self.db_session.last_user
-            return User(id=1, email="test@test.com", hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjIQqiRQYq")
-        return None
+Base = declarative_base()
 
-class MockSessionLocal:
-    def __init__(self):
-        self.last_user = None
+# ─── MODO DE OPERACIÓN ──────────────────────────────────────────────────────
+# Si en el .env pones USE_MOCK_DB=True, se usará el Mock de Fabián.
+# Si no está o es False, se usará la conexión real a MySQL.
+USE_MOCK = os.getenv("USE_MOCK_DB", "True").lower() == "true"
 
-    def query(self, model_class):
-        return MockQuery(model_class, self)
-        
-    def add(self, obj):
-        if isinstance(obj, User):
-            self.last_user = obj
-            
-    def commit(self):
-        pass
-        
-    def refresh(self, obj):
-        if isinstance(obj, User):
-            obj.id = 1
-            obj.created_at = datetime.datetime.utcnow()
-            
-    def close(self):
-        pass
+if USE_MOCK:
+    # ─── MOCK DE FABIÁN (Para desarrollo rápido sin BD) ───
+    class MockQuery:
+        def __init__(self, model_class, db_session):
+            self.model_class = model_class
+            self.db_session = db_session
+        def filter(self, *args, **kwargs): return self
+        def first(self):
+            from db.models import User
+            if self.model_class == User:
+                return User(id=1, email="test@test.com", hashed_password="...")
+            return None
+        def count(self): return 0
+        def all(self): return []
 
-SessionLocal = MockSessionLocal
+    class MockSessionLocal:
+        def __init__(self): self.last_user = None
+        def query(self, model_class): return MockQuery(model_class, self)
+        def add(self, obj): pass
+        def commit(self): pass
+        def refresh(self, obj):
+            if hasattr(obj, 'id'): obj.id = 1
+        def close(self): pass
+
+    SessionLocal = MockSessionLocal
+    print("⚠️  AVISO: Usando BASE DE DATOS MOCK (Memoria temporal)")
+else:
+    # ─── CONEXIÓN REAL (Para Roberto y Producción) ───
+    engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    print("✅ CONEXIÓN REAL: MySQL en Docker está activa")
+
+def get_db_session():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
