@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
+import '../analysis/analysis_page.dart';
+import '../expenses/add_expense_page.dart';
+import '../goals/goals_page.dart';
+import '../profile/profile_page.dart';
 import 'dashboard_page.dart';
 
 class MainLayout extends StatefulWidget {
@@ -18,10 +21,10 @@ class _MainLayoutState extends State<MainLayout> {
 
   final List<Widget> _pages = [
     const DashboardPage(),
-    const Center(child: Text('Agregar', style: AppTextStyles.heading2)),
-    const Center(child: Text('Metas', style: AppTextStyles.heading2)),
-    const Center(child: Text('Análisis', style: AppTextStyles.heading2)),
-    const Center(child: Text('Perfil', style: AppTextStyles.heading2)),
+    const AddExpensePage(),
+    const GoalsPage(),
+    const AnalysisPage(),
+    const ProfilePage(),
   ];
 
   @override

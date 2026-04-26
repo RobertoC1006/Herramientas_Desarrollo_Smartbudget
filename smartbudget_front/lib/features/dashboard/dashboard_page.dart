@@ -1,13 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/budget_provider.dart';
+import '../../core/providers/transactions_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../data/models/transaction.dart';
+import '../expenses/add_expense_page.dart' show TransactionTile;
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final budget = ref.watch(budgetProvider);
+    final transactions = ref.watch(transactionsProvider);
+
+    final totalExpenses = transactions.where((t) => !t.isIncome).fold(0.0, (sum, item) => sum + item.amount);
+    final totalIncome = transactions.where((t) => t.isIncome).fold(0.0, (sum, item) => sum + item.amount);
+
+    final balance = budget - totalExpenses + totalIncome;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -21,13 +34,13 @@ class DashboardPage extends StatelessWidget {
                 children: [
                   _buildHeader(),
                   const SizedBox(height: 30),
-                  _buildBalanceCard(),
+                  _buildBalanceCard(balance),
                   const SizedBox(height: 24),
-                  _buildIncomeExpenseRow(),
+                  _buildIncomeExpenseRow(budget + totalIncome, totalExpenses),
                   const SizedBox(height: 30),
                   const Text('Presupuesto Mensual', style: AppTextStyles.heading3),
                   const SizedBox(height: 16),
-                  _buildBudgetProgress(),
+                  _buildBudgetProgress(budget, totalExpenses),
                   const SizedBox(height: 30),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -40,7 +53,7 @@ class DashboardPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _buildRecentTransactions(),
+                  _buildRecentTransactions(transactions),
                   const SizedBox(height: 100), // Espacio extra para el FAB en web/desktop
                 ],
               ),
@@ -78,7 +91,7 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBalanceCard() {
+  Widget _buildBalanceCard(double balance) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -101,7 +114,7 @@ class DashboardPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Balance Total',
+            'Balance Disponible',
             style: TextStyle(
               color: Colors.white70,
               fontSize: 16,
@@ -109,52 +122,26 @@ class DashboardPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            '\$12,450.00',
-            style: TextStyle(
+          Text(
+            'S/ ${balance.toStringAsFixed(2)}',
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
               fontWeight: FontWeight.w800,
             ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.trending_up, color: Colors.white, size: 16),
-                    SizedBox(width: 6),
-                    Text(
-                      '+8.5% este mes',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildIncomeExpenseRow() {
+  Widget _buildIncomeExpenseRow(double totalIncome, double totalExpenses) {
     return Row(
       children: [
         Expanded(
           child: _SummaryCard(
-            title: 'Ingresos',
-            amount: '\$4,200.00',
+            title: 'Presupuesto/Ingresos',
+            amount: 'S/ ${totalIncome.toStringAsFixed(2)}',
             icon: Icons.arrow_downward,
             iconColor: AppColors.primary,
             backgroundColor: AppColors.primaryLight,
@@ -164,17 +151,20 @@ class DashboardPage extends StatelessWidget {
         Expanded(
           child: _SummaryCard(
             title: 'Gastos',
-            amount: '\$1,850.00',
+            amount: 'S/ ${totalExpenses.toStringAsFixed(2)}',
             icon: Icons.arrow_upward,
             iconColor: AppColors.danger,
-            backgroundColor: AppColors.danger.withOpacity(0.1),
+            backgroundColor: AppColors.danger.withValues(alpha: 0.1),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBudgetProgress() {
+  Widget _buildBudgetProgress(double budget, double totalExpenses) {
+    final progress = budget > 0 ? (totalExpenses / budget).clamp(0.0, 1.0) : 0.0;
+    final remaining = (budget - totalExpenses).clamp(0.0, double.infinity);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -195,7 +185,7 @@ class DashboardPage extends StatelessWidget {
             children: [
               const Text('Gastado', style: AppTextStyles.label),
               Text(
-                '\$1,850 / \$3,000',
+                'S/ ${totalExpenses.toStringAsFixed(2)} / S/ ${budget.toStringAsFixed(2)}',
                 style: AppTextStyles.label.copyWith(color: AppColors.textSecondary),
               ),
             ],
@@ -203,16 +193,18 @@ class DashboardPage extends StatelessWidget {
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: const LinearProgressIndicator(
-              value: 1850 / 3000,
+            child: LinearProgressIndicator(
+              value: progress,
               minHeight: 10,
               backgroundColor: AppColors.background,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                progress > 0.9 ? AppColors.danger : (progress > 0.7 ? AppColors.warning : AppColors.primary),
+              ),
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Te quedan \$1,150 para este mes',
+          Text(
+            'Te quedan S/ ${remaining.toStringAsFixed(2)} para este mes',
             style: AppTextStyles.small,
           ),
         ],
@@ -220,61 +212,34 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentTransactions() {
-    final transactions = [
-      {'title': 'Supermercado', 'date': 'Hoy', 'amount': '-\$85.00', 'icon': Icons.shopping_cart_outlined},
-      {'title': 'Salario', 'date': 'Ayer', 'amount': '+\$2,100.00', 'icon': Icons.work_outline, 'isIncome': true},
-      {'title': 'Netflix', 'date': '15 Abr', 'amount': '-\$15.99', 'icon': Icons.movie_outlined},
-      {'title': 'Restaurante', 'date': '14 Abr', 'amount': '-\$45.50', 'icon': Icons.restaurant_outlined},
-    ];
+  Widget _buildRecentTransactions(List<TransactionItem> transactions) {
+    if (transactions.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        alignment: Alignment.center,
+        child: Column(children: [
+          Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.border),
+          const SizedBox(height: 12),
+          Text('No hay transacciones aún',
+              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+        ]),
+      );
+    }
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: transactions.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final tx = transactions[index];
-        final isIncome = tx['isIncome'] == true;
+    final recent = transactions.take(5).toList();
 
-        return Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border.withOpacity(0.5)),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isIncome ? AppColors.primaryLight : AppColors.surfaceSoft,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                tx['icon'] as IconData,
-                color: isIncome ? AppColors.primary : AppColors.textSecondary,
-              ),
-            ),
-            title: Text(
-              tx['title'] as String,
-              style: AppTextStyles.label.copyWith(fontSize: 16),
-            ),
-            subtitle: Text(
-              tx['date'] as String,
-              style: AppTextStyles.small,
-            ),
-            trailing: Text(
-              tx['amount'] as String,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: isIncome ? AppColors.primary : AppColors.textPrimary,
-              ),
-            ),
-          ),
-        );
-      },
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(color: AppColors.shadow, blurRadius: 15, offset: Offset(0, 5))
+        ],
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Column(
+        children: recent.map((tx) => TransactionTile(transaction: tx)).toList(),
+      ),
     );
   }
 }
