@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes import auth, budgets, expenses, goals, alerts, simulator, smartscore
-
-
+from core.config import settings
 from db.session import engine
 from db.models import Base
 
