@@ -1,14 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes import auth, budgets, expenses, goals, alerts, simulator, smartscore
-from core.config import settings
+
+
 from db.session import engine
 from db.models import Base
 
 app = FastAPI(title=settings.PROJECT_NAME, version="1.0.0")
 
-# Crear todas las tablas en la base de datos (si no existen)
-Base.metadata.create_all(bind=engine)
+# Crear tablas solo si no estamos en modo Mock (si engine no es None)
+if engine:
+    Base.metadata.create_all(bind=engine)
 
 app.add_middleware(
     CORSMiddleware,
