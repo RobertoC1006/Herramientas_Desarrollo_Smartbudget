@@ -32,10 +32,15 @@ if USE_MOCK:
         def add(self, obj): pass
         def commit(self): pass
         def refresh(self, obj):
-            if hasattr(obj, 'id'): obj.id = 1
+            from datetime import datetime
+            if hasattr(obj, 'id') and not getattr(obj, 'id'):
+                obj.id = 1
+            if hasattr(obj, 'created_at') and not getattr(obj, 'created_at'):
+                obj.created_at = datetime.now()
         def close(self): pass
 
     SessionLocal = MockSessionLocal
+    engine = None
     print("⚠️  AVISO: Usando BASE DE DATOS MOCK (Memoria temporal)")
 else:
     # ─── CONEXIÓN REAL (Para Roberto y Producción) ───
