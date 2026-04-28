@@ -28,7 +28,7 @@ def obtener_presupuesto_activo(db: Session, user_id: int) -> Budget:
         and_(
             Budget.user_id == user_id,
             Budget.mes == hoy.month,
-            Budget.año == hoy.year
+            Budget.anio == hoy.year
         )
     ).first()
 
@@ -39,7 +39,7 @@ def obtener_presupuesto_activo(db: Session, user_id: int) -> Budget:
     
     return budget
 
-def crear_presupuesto_mes(db: Session, user_id: int, monto_base: float, mes: int, año: int) -> Budget:
+def crear_presupuesto_mes(db: Session, user_id: int, monto_base: float, mes: int, anio: int) -> Budget:
     """
     Crea un nuevo presupuesto. Si ya existe uno para ese mes, lo actualiza.
     
@@ -51,7 +51,7 @@ def crear_presupuesto_mes(db: Session, user_id: int, monto_base: float, mes: int
         and_(
             Budget.user_id == user_id,
             Budget.mes == mes,
-            Budget.año == año
+            Budget.anio == anio
         )
     ).first()
 
@@ -65,7 +65,7 @@ def crear_presupuesto_mes(db: Session, user_id: int, monto_base: float, mes: int
         budget = Budget(
             user_id=user_id,
             mes=mes,
-            año=año,
+            anio=anio,
             monto_base=monto_base,
             saldo_disponible=monto_base
         )
@@ -117,6 +117,6 @@ def calcular_resumen_mensual(db: Session, user_id: int) -> dict:
         "ingresos_adicionales": budget.ingresos_adicionales,
         "porcentaje_gastado": round(porcentaje_gastado, 2),
         "mes": budget.mes,
-        "año": budget.año,
+        "anio": budget.anio,
         "simbolo": "S/."
     }
