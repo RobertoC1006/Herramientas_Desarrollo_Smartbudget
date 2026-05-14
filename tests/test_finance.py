@@ -28,7 +28,7 @@ def db():
 
 def test_flujo_presupuesto_y_ahorro(db):
     # 1. Crear presupuesto de 2000 soles
-    crear_presupuesto_mes(db, user_id=1, monto_base=2000, mes=1, año=2024)
+    crear_presupuesto_mes(db, user_id=1, monto_base=2000, mes=1, anio=2024)
     resumen = calcular_resumen_mensual(db, user_id=1)
     assert resumen["saldo_disponible"] == 2000
 

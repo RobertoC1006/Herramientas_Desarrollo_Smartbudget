@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
 from db.models import Budget, IncomeLog
-from core.exceptions import PresupuestoNoEncontradoError
+from core.exceptions import PresupuestoNoEncontradoError, SaldoInsuficienteError
 
 def obtener_presupuesto_activo(db: Session, user_id: int) -> Budget:
     """
@@ -120,3 +120,30 @@ def calcular_resumen_mensual(db: Session, user_id: int) -> dict:
         "anio": budget.anio,
         "simbolo": "S/."
     }
+
+def descontar_gasto(db: Session, user_id: int, monto: float) -> Budget:
+    """
+    Descuenta el monto del saldo disponible del presupuesto activo.
+    """
+    budget = obtener_presupuesto_activo(db, user_id)
+    if budget.saldo_disponible < monto:
+        raise SaldoInsuficienteError(
+            f"No tienes saldo suficiente en tu presupuesto mensual. Disponible: S/. {budget.saldo_disponible:.2f}"
+        )
+    
+    budget.saldo_disponible -= monto
+    budget.total_gastado += monto
+    db.commit()
+    db.refresh(budget)
+    return budget
+
+def revertir_gasto(db: Session, user_id: int, monto: float) -> Budget:
+    """
+    Revierte un gasto, devolviendo el monto al saldo disponible.
+    """
+    budget = obtener_presupuesto_activo(db, user_id)
+    budget.saldo_disponible += monto
+    budget.total_gastado -= monto
+    db.commit()
+    db.refresh(budget)
+    return budget
