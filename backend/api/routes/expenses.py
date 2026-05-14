@@ -1,50 +1,85 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from api.schemas.ai_extraction import AIExtractionResponse
-from api.dependencies import get_current_user
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from api.schemas.expense import ExpenseCreate, ExpenseResponse, ScanResponse
+from api.dependencies import get_db, get_current_user
+from core import expenses as expenses_core
+from core import ai as ai_core
+from core.exceptions import (
+    SaldoInsuficienteError,
+    PresupuestoNoEncontradoError,
+    GastoNoEncontradoError,
+    OCRFallidoError
+)
 
 router = APIRouter()
 
-MAX_FILE_SIZE_MB = 5
-MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
-ALLOWED_CONTENT_TYPES = ["image/jpeg", "image/png", "application/pdf"]
 
-@router.post("/ocr", response_model=AIExtractionResponse)
-async def extract_expense_from_receipt(
-    file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user)
+@router.get("/", response_model=list[ExpenseResponse])
+def listar_gastos(
+    mes: int = None,
+    año: int = None,
+    db=Depends(get_db),
+    user=Depends(get_current_user)
 ):
-    """
-    Recibe la imagen de una boleta, la valida y la envía al agente IA 
-    para extraer la información estructurada.
-    """
-    if file.content_type not in ALLOWED_CONTENT_TYPES:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Tipo de archivo no permitido: {file.content_type}. Solo se aceptan JPG, PNG y PDF."
-        )
-    
-    contents = await file.read()
-    if len(contents) > MAX_FILE_SIZE_BYTES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"El archivo excede el tamaño máximo permitido de {MAX_FILE_SIZE_MB}MB."
-        )
-    
-    await file.seek(0)
-    
+    from datetime import date
+    mes = mes or date.today().month
+    año = año or date.today().year
+    return expenses_core.listar_gastos_mes(db, user.id, mes, año)
+
+
+@router.post("/", response_model=ExpenseResponse, status_code=201)
+def crear_gasto(
+    req: ExpenseCreate,
+    db=Depends(get_db),
+    user=Depends(get_current_user)
+):
     try:
-        # Aquí se conectará la lógica de IA en el futuro
-        # raw_ai_data = await process_receipt_with_ai(file)
-        raw_ai_data = {
-            "descripcion": f"Compra extraída de {file.filename}",
-            "monto": 45.50,
-            "categoria": "otros", # CategoriaGasto fallback
-            "fecha": "2023-10-27",
-            "texto_completo": "Mock OCR"
-        }
-        
-        validated_data = AIExtractionResponse(**raw_ai_data)
-        return validated_data
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error procesando la boleta con IA: {str(e)}")
+        return expenses_core.registrar_gasto(
+            db, user.id, req.categoria, req.monto,
+            req.descripcion, req.comercio, req.fecha, req.fuente
+        )
+    except SaldoInsuficienteError as e:
+        raise HTTPException(422, str(e))
+    except PresupuestoNoEncontradoError as e:
+        raise HTTPException(404, str(e))
+
+
+@router.post("/scan", response_model=ScanResponse)
+async def escanear_ticket(
+    file: UploadFile = File(...),
+    db=Depends(get_db),
+    user=Depends(get_current_user)
+):
+    content = await file.read()
+    try:
+        if file.content_type == "application/pdf":
+            resultado = await ai_core.extraer_gasto_desde_pdf(content)
+        else:
+            resultado = await ai_core.extraer_gasto_desde_imagen(content, file.content_type)
+        return resultado
+    except OCRFallidoError as e:
+        raise HTTPException(422, str(e))
+
+
+@router.delete("/{expense_id}", status_code=204)
+def eliminar(
+    expense_id: int,
+    db=Depends(get_db),
+    user=Depends(get_current_user)
+):
+    try:
+        expenses_core.eliminar_gasto(db, user.id, expense_id)
+    except GastoNoEncontradoError as e:
+        raise HTTPException(404, str(e))
+
+
+@router.get("/summary")
+def resumen_categorias(
+    mes: int = None,
+    año: int = None,
+    db=Depends(get_db),
+    user=Depends(get_current_user)
+):
+    from datetime import date
+    return expenses_core.calcular_gastos_por_categoria(
+        db, user.id, mes or date.today().month, año or date.today().year
+    )

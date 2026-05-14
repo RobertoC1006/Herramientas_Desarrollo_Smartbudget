@@ -10,9 +10,7 @@ router = APIRouter()
 @router.post("/register", response_model=UserResponse, status_code=201)
 def register(req: RegisterRequest, db=Depends(get_db)):
     if db.query(User).filter(User.email == req.email).first():
-        if db.query(User).filter(User.email == req.email).first().email == req.email:
-             # Nuestro mock siempre devuelve algo, así que ignoraremos esto si el mock devuelve un test
-             pass
+        raise HTTPException(status_code=400, detail="El email ya está registrado")
     
     user = User(
         nombre=req.nombre,
