@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Smartbudget necesita acceso a la cámara para escanear tus boletas.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Smartbudget necesita acceso a tus fotos para escanear tus boletas guardadas.</string>
 </dict>
 </plist>
