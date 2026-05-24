@@ -120,8 +120,10 @@ class TestJWT:
     def test_decodificar_token_alterado_lanza_excepcion(self):
         """Modificar un byte del token debe invalidar la firma."""
         token = crear_token_acceso({"sub": "1"})
-        # Alterar el último carácter del token
-        token_alterado = token[:-1] + ("A" if token[-1] != "A" else "B")
+        # Alterar la sección de la firma para invalidarla de forma garantizada
+        partes = token.split(".")
+        partes[2] = partes[2][:-4] + "AAAA"
+        token_alterado = ".".join(partes)
         with pytest.raises(TokenInvalidoError):
             decodificar_token(token_alterado)
 
