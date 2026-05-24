@@ -41,6 +41,12 @@ services:
       - smartbudget_net
     volumes:
       - ./backend:/app
+    command: >
+      uvicorn api.main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --reload-dir /app
 
   # ─── Frontend (Flutter Web / PWA) ─────────────────────────────────────────
   frontend:
@@ -50,7 +56,7 @@ services:
     container_name: smartbudget_frontend
     restart: always
     ports:
-      - "3001:80" # Acceso en http://localhost:3000
+      - "3001:80"
     networks:
       - smartbudget_net
     depends_on:
