@@ -28,9 +28,19 @@ if USE_MOCK:
             self.filter_kwargs = {}
 
         def filter(self, *args, **kwargs):
-            # Simplificamos: si es un filtro de SQLAlchemy (User.email == '...'), 
-            # extraemos el valor si es posible.
             self.filter_kwargs.update(kwargs)
+            for arg in args:
+                try:
+                    # En SQLAlchemy, las expresiones de comparación (==) tienen left y right
+                    if hasattr(arg, "left") and hasattr(arg, "right"):
+                        key = getattr(arg.left, "key", None)
+                        right = arg.right
+                        # Si es un objeto de parámetro de enlace, extraemos su valor
+                        value = getattr(right, "value", right)
+                        if key is not None:
+                            self.filter_kwargs[key] = value
+                except Exception:
+                    pass
             return self
 
         def first(self):
@@ -70,6 +80,23 @@ if USE_MOCK:
             table = obj.__tablename__
             if table not in MOCK_STORAGE: MOCK_STORAGE[table] = []
             
+            # Aplicar valores por defecto definidos en el mapeo de SQLAlchemy
+            try:
+                for col in obj.__mapper__.columns:
+                    val = getattr(obj, col.key, None)
+                    if val is None and col.default is not None:
+                        if hasattr(col.default, 'arg'):
+                            arg = col.default.arg
+                            if callable(arg):
+                                try:
+                                    setattr(obj, col.key, arg(None))
+                                except Exception:
+                                    setattr(obj, col.key, arg())
+                            else:
+                                setattr(obj, col.key, arg)
+            except Exception:
+                pass
+
             # Asignar ID si no tiene
             if not getattr(obj, "id", None):
                 obj.id = len(MOCK_STORAGE[table]) + 1
