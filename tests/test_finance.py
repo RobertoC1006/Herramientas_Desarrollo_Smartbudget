@@ -27,8 +27,10 @@ def db():
     Base.metadata.drop_all(bind=engine)
 
 def test_flujo_presupuesto_y_ahorro(db):
-    # 1. Crear presupuesto de 2000 soles
-    crear_presupuesto_mes(db, user_id=1, monto_base=2000, mes=1, anio=2024)
+    from datetime import date
+    hoy = date.today()
+    # 1. Crear presupuesto de 2000 soles para el mes corriente
+    crear_presupuesto_mes(db, user_id=1, monto_base=2000, mes=hoy.month, anio=hoy.year)
     resumen = calcular_resumen_mensual(db, user_id=1)
     assert resumen["saldo_disponible"] == 2000
 
