@@ -14,20 +14,32 @@ def simular_compra(
     db=Depends(get_db),
     user=Depends(get_current_user)
 ):
-    try:
-        # Obtener presupuesto activo para el saldo_disponible
-        budget = budgets_core.obtener_presupuesto_activo(db, user.id)
-        saldo_disponible = budget.saldo_disponible
-    except PresupuestoNoEncontradoError:
-        saldo_disponible = 0.0
-
-    # Obtener metas activas
-    metas = goals_core.listar_metas_con_progreso(db, user.id)
-    # Filtramos solo las metas en progreso o pendientes
+    from db.models import Goal
     from core.enums import EstadoMeta
-    metas_activas = [m for m in metas if m["estado"] in [EstadoMeta.PENDIENTE, EstadoMeta.EN_PROGRESO]]
+
+    try:
+        # Obtener presupuesto activo para el saldo_disponible (Lanza HTTP 404 si no existe)
+        budget = budgets_core.obtener_presupuesto_activo(db, user.id)
+    except PresupuestoNoEncontradoError as e:
+        raise HTTPException(404, str(e))
+
+    # Obtener metas activas en progreso
+    metas = db.query(Goal).filter(
+        Goal.user_id == user.id, 
+        Goal.estado == EstadoMeta.EN_PROGRESO
+    ).all()
+    
+    metas_dict = [
+        {
+            "nombre": g.nombre, 
+            "monto_objetivo": g.monto_objetivo,
+            "saldo_acumulado": g.saldo_acumulado,
+            "faltante": g.monto_objetivo - g.saldo_acumulado
+        } 
+        for g in metas
+    ]
 
     # Llamar al simulador (stateless)
-    resultado = simulator_core.simular_compra(saldo_disponible, req.monto_compra, metas_activas)
+    resultado = simulator_core.simular_compra(budget.saldo_disponible, req.monto_compra, metas_dict)
     
     return resultado

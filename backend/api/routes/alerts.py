@@ -28,3 +28,23 @@ def generar_alertas(
     """
     alerts_core.generar_alertas_usuario(db, user.id)
     return {"message": "Reglas de alertas evaluadas exitosamente."}
+
+@router.put("/{alert_id}/read", response_model=AlertResponse)
+def marcar_alerta_leida(
+    alert_id: int,
+    db=Depends(get_db),
+    user=Depends(get_current_user)
+):
+    """
+    Marca una alerta como leída directamente en la base de datos.
+    """
+    from db.models import Alert
+    
+    alerta = db.query(Alert).filter(Alert.id == alert_id, Alert.user_id == user.id).first()
+    if not alerta:
+        raise HTTPException(status_code=404, detail="Alerta no encontrada.")
+        
+    alerta.leida = True
+    db.commit()
+    db.refresh(alerta)
+    return alerta

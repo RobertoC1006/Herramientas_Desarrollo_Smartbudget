@@ -49,12 +49,12 @@ async def escanear_ticket(
     db=Depends(get_db),
     user=Depends(get_current_user)
 ):
+    if file.content_type == "application/pdf":
+        raise HTTPException(501, "La extracción de datos desde archivos PDF aún no está soportada en esta versión.")
+    
     content = await file.read()
     try:
-        if file.content_type == "application/pdf":
-            resultado = await ai_core.extraer_gasto_desde_pdf(content)
-        else:
-            resultado = await ai_core.extraer_gasto_desde_imagen(content, file.content_type)
+        resultado = await ai_core.extraer_gasto_desde_imagen(content, file.content_type)
         return resultado
     except OCRFallidoError as e:
         raise HTTPException(422, str(e))
