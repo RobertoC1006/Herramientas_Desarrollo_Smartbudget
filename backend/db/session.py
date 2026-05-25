@@ -115,11 +115,21 @@ if USE_MOCK:
     print("⚠️  AVISO: Usando BASE DE DATOS MOCK con memoria temporal")
 else:
     # ─── CONEXIÓN REAL (Para Roberto y Producción) ───
-    engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+    # Usamos pool_pre_ping=True para que SQLAlchemy verifique si la conexión 
+    # sigue viva antes de usarla (evita errores tras periodos de inactividad).
+    engine = create_engine(
+        settings.DATABASE_URL, 
+        pool_pre_ping=True,
+        pool_recycle=3600
+    )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     print("✅ CONEXIÓN REAL: MySQL en Docker está activa")
 
 def get_db_session():
+    """
+    Función de utilidad para obtener una sesión.
+    En FastAPI se usa via Dependencia (Depends).
+    """
     db = SessionLocal()
     try:
         yield db
