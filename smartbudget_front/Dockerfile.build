@@ -1,0 +1,13 @@
+FROM ghcr.io/cirruslabs/flutter:stable
+
+WORKDIR /app
+
+# Copia los archivos del proyecto Flutter desde el contexto local
+COPY . .
+
+# Obtiene dependencias y compila el APK
+RUN flutter pub get
+RUN flutter build apk --release
+
+# El APK resultante queda en:
+# /app/build/app/outputs/flutter-apk/app-release.apk
