@@ -91,6 +91,14 @@ _buildSummaryCard(
   financialMessage,
 ),
 
+const SizedBox(height: 20),
+
+_buildQuickStats(
+  totalExpenses,
+  expenses.length,
+  highestExpense?.category ?? 'Sin datos',
+),
+
 const SizedBox(height: 24),
 
 _buildDistributionCard(expensesByCategory, categories),
@@ -98,6 +106,8 @@ _buildDistributionCard(expensesByCategory, categories),
 
               _buildWhatIfCard(expensesByCategory, categories),
               const SizedBox(height: 30),
+              _buildSmartInsights(expensesByCategory),
+const SizedBox(height: 30),
 
               Text('Historial de Gastos', style: AppTextStyles.heading3),
               const SizedBox(height: 16),
@@ -542,7 +552,9 @@ _buildDistributionCard(expensesByCategory, categories),
         ),
         child: Text(
           'Aún no has registrado ningún gasto',
-          style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+          style: AppTextStyles.body.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
       );
     }
@@ -552,13 +564,193 @@ _buildDistributionCard(expensesByCategory, categories),
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
-          BoxShadow(color: AppColors.shadow, blurRadius: 15, offset: Offset(0, 5))
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 15,
+            offset: Offset(0, 5),
+          ),
         ],
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(
-        children: expenses.map((tx) => TransactionTile(transaction: tx)).toList(),
+        children: expenses
+            .map((tx) => TransactionTile(transaction: tx))
+            .toList(),
       ),
     );
   }
+
+  Widget _buildSmartInsights(
+    Map<String, double> expensesByCategory,
+  ) {
+    String message = 'Tus finanzas van bien.';
+    IconData icon = Icons.check_circle;
+    Color color = Colors.green;
+
+    if (expensesByCategory.isNotEmpty) {
+      final highestCategory = expensesByCategory.entries.reduce(
+        (a, b) => a.value > b.value ? a : b,
+      );
+
+      if (highestCategory.value > 500) {
+        message =
+            'Estás gastando mucho en ${highestCategory.key}. Considera reducir ese gasto.';
+        icon = Icons.warning_amber_rounded;
+        color = Colors.orange;
+      }
+
+      if (highestCategory.value > 1000) {
+        message =
+            'Tus gastos en ${highestCategory.key} son demasiado altos.';
+        icon = Icons.error_outline;
+        color = Colors.red;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 15,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Consejo Inteligente',
+                  style: AppTextStyles.heading3.copyWith(
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  message,
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStats(
+  double totalExpenses,
+  int totalTransactions,
+  String topCategory,
+) {
+  return Row(
+    children: [
+      Expanded(
+        child: _buildStatCard(
+          Icons.account_balance_wallet,
+          'Total',
+          'S/ ${totalExpenses.toStringAsFixed(0)}',
+          Colors.blue,
+        ),
+      ),
+
+      const SizedBox(width: 12),
+
+      Expanded(
+        child: _buildStatCard(
+          Icons.receipt_long,
+          'Mov.',
+          '$totalTransactions',
+          Colors.orange,
+        ),
+      ),
+
+      const SizedBox(width: 12),
+
+      Expanded(
+        child: _buildStatCard(
+          Icons.star,
+          'Top',
+          topCategory,
+          Colors.purple,
+        ),
+      ),
+    ],
+  );
 }
+
+Widget _buildStatCard(
+  IconData icon,
+  String title,
+  String value,
+  Color color,
+) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(22),
+      boxShadow: const [
+        BoxShadow(
+          color: AppColors.shadow,
+          blurRadius: 10,
+          offset: Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 24,
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        Text(
+          title,
+          style: AppTextStyles.small,
+        ),
+
+        const SizedBox(height: 6),
+
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          style: AppTextStyles.label.copyWith(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+}
+
