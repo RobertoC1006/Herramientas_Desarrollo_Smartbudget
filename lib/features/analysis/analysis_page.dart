@@ -41,6 +41,22 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
     }
 
     final categories = expensesByCategory.keys.toList();
+    final totalExpenses = expenses.fold(
+  0.0,
+  (sum, item) => sum + item.amount,
+);
+
+final highestExpense = expenses.isNotEmpty
+    ? expenses.reduce(
+        (a, b) => a.amount > b.amount ? a : b,
+      )
+    : null;
+
+String financialMessage = totalExpenses > 3000
+    ? 'Tus gastos son elevados este mes'
+    : totalExpenses > 1500
+        ? 'Tus gastos están bajo control'
+        : 'Excelente manejo financiero';
 
     // Auto-select first category if none selected or if selected doesn't exist anymore
     if (categories.isNotEmpty &&
@@ -67,9 +83,17 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 30),
+             const SizedBox(height: 30),
 
-              _buildDistributionCard(expensesByCategory, categories),
+_buildSummaryCard(
+  totalExpenses,
+  highestExpense?.category ?? 'Sin datos',
+  financialMessage,
+),
+
+const SizedBox(height: 24),
+
+_buildDistributionCard(expensesByCategory, categories),
               const SizedBox(height: 24),
 
               _buildWhatIfCard(expensesByCategory, categories),
@@ -86,6 +110,131 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
     );
   }
 
+
+  Widget _buildSummaryCard(
+  double totalExpenses,
+  String highestCategory,
+  String message,
+) {
+  return Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [
+          Color(0xFF4F46E5),
+          Color(0xFF7C3AED),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(28),
+      boxShadow: const [
+        BoxShadow(
+          color: Colors.black12,
+          blurRadius: 15,
+          offset: Offset(0, 6),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.analytics_outlined,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Resumen Financiero',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 24),
+
+        Text(
+          'Gasto Total',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.8),
+          ),
+        ),
+
+        const SizedBox(height: 6),
+
+        Text(
+          'S/ ${totalExpenses.toStringAsFixed(2)}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        Row(
+          children: [
+            const Icon(
+              Icons.trending_up,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Categoría con mayor gasto: $highestCategory',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.lightbulb,
+                color: Colors.amber,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
   Widget _buildDistributionCard(
     Map<String, double> expensesByCategory,
     List<String> categories,
