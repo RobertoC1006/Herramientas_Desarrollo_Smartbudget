@@ -15,8 +15,14 @@ class AuthRepository {
   Future<TokenResponse> login(String email, String password) async {
     try {
       final response = await apiClient.dio.post(
-        '/auth/login',
-        data: {'email': email, 'password': password},
+        '/api/auth/login',
+        data: {
+          'username': email,
+          'password': password,
+        },
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+        ),
       );
 
       final tokenResponse = TokenResponse.fromJson(
@@ -38,7 +44,7 @@ class AuthRepository {
   ) async {
     try {
       final response = await apiClient.dio.post(
-        '/auth/register',
+        '/api/auth/register',
         data: {'nombre': nombre, 'email': email, 'password': password},
       );
 
@@ -50,7 +56,7 @@ class AuthRepository {
 
   Future<UserResponse> fetchProfile() async {
     try {
-      final response = await apiClient.dio.get('/auth/profile');
+      final response = await apiClient.dio.get('/api/auth/me');
 
       return UserResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
