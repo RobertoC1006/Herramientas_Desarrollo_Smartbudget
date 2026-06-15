@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/providers/transactions_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/category_utils.dart';
-import '../../data/models/transaction.dart';
 import '../../services/ocr_service.dart';
 
 class OcrConfirmationPage extends ConsumerStatefulWidget {
@@ -82,23 +80,15 @@ class _OcrConfirmationPageState extends ConsumerState<OcrConfirmationPage> {
       final amount = double.tryParse(_amountController.text) ?? 0.0;
       final merchant = _merchantController.text.trim();
       final desc = _descriptionController.text.trim();
-      final info = CategoryUtils.getCategoryInfo(_selectedCategory!);
 
-      final title = desc.isNotEmpty ? desc : merchant.isNotEmpty ? merchant : _selectedCategory!;
-
-      final transaction = TransactionItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: title,
-        amount: amount,
-        date: _selectedDate,
+      ref.read(transactionsProvider.notifier).addTransaction(
         category: _selectedCategory!,
-        icon: info.icon,
-        categoryColor: info.color,
-        categoryBackground: info.background,
-        isIncome: false,
+        amount: amount,
+        description: desc,
+        merchant: merchant,
+        date: _selectedDate,
+        source: widget.source == 'pdf' ? 'ocr_pdf' : 'ocr_imagen',
       );
-
-      ref.read(transactionsProvider.notifier).addTransaction(transaction);
       
       if (context.mounted) {
         // Return true to indicate success

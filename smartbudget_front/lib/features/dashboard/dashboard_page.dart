@@ -6,6 +6,7 @@ import '../../core/providers/transactions_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../data/models/transaction.dart';
+import '../auth/auth_controller.dart';
 import '../expenses/add_expense_page.dart' show TransactionTile;
 
 class DashboardPage extends ConsumerWidget {
@@ -13,13 +14,69 @@ class DashboardPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final budget = ref.watch(budgetProvider);
-    final transactions = ref.watch(transactionsProvider);
+    final budgetState = ref.watch(budgetProvider);
+    final transactionsState = ref.watch(transactionsProvider);
+    final authState = ref.watch(authControllerProvider);
 
-    final totalExpenses = transactions.where((t) => !t.isIncome).fold(0.0, (sum, item) => sum + item.amount);
-    final totalIncome = transactions.where((t) => t.isIncome).fold(0.0, (sum, item) => sum + item.amount);
+    final userName = authState.value?.nombre ?? 'Usuario';
 
-    final balance = budget - totalExpenses + totalIncome;
+    // 1. Mostrar loading si se están cargando los datos iniciales
+    if (budgetState.isLoading || transactionsState.isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+
+    // 2. Mostrar error de red o de base de datos
+    if (budgetState.hasError || transactionsState.hasError) {
+      final error = budgetState.error ?? transactionsState.error;
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.danger),
+                const SizedBox(height: 16),
+                Text(
+                  'Error al conectar con el servidor:\n$error',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.body,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    ref.read(budgetProvider.notifier).refresh();
+                    ref.read(transactionsProvider.notifier).refresh();
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                  child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final budgetSummary = budgetState.value;
+    final transactions = transactionsState.value ?? [];
+
+    // 3. Si no hay presupuesto creado para el mes, mostramos la pantalla de creación
+    if (budgetSummary == null) {
+      return _buildNoBudgetScreen(context, ref, userName);
+    }
+
+    // 4. Si el presupuesto existe, renderizamos el Dashboard con datos reales
+    final balance = budgetSummary.saldoDisponible;
+    final totalExpenses = budgetSummary.totalGastado;
+    final totalIncome = budgetSummary.montoBase + budgetSummary.ingresosAdicionales;
+    final budget = budgetSummary.montoBase;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -32,11 +89,11 @@ class DashboardPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(),
+                  _buildHeader(userName),
                   const SizedBox(height: 30),
                   _buildBalanceCard(balance),
                   const SizedBox(height: 24),
-                  _buildIncomeExpenseRow(budget + totalIncome, totalExpenses),
+                  _buildIncomeExpenseRow(totalIncome, totalExpenses),
                   const SizedBox(height: 30),
                   const Text('Presupuesto Mensual', style: AppTextStyles.heading3),
                   const SizedBox(height: 16),
@@ -54,7 +111,7 @@ class DashboardPage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   _buildRecentTransactions(transactions),
-                  const SizedBox(height: 100), // Espacio extra para el FAB en web/desktop
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
@@ -64,7 +121,7 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(String userName) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -72,7 +129,7 @@ class DashboardPage extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '¡Hola, Usuario!',
+              '¡Hola, $userName!',
               style: AppTextStyles.heading2,
             ),
             const SizedBox(height: 4),
@@ -218,7 +275,7 @@ class DashboardPage extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: 32),
         alignment: Alignment.center,
         child: Column(children: [
-          Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.border),
+          const Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.border),
           const SizedBox(height: 12),
           Text('No hay transacciones aún',
               style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
@@ -239,6 +296,120 @@ class DashboardPage extends ConsumerWidget {
       clipBehavior: Clip.hardEdge,
       child: Column(
         children: recent.map((tx) => TransactionTile(transaction: tx)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildNoBudgetScreen(BuildContext context, WidgetRef ref, String userName) {
+    final TextEditingController budgetController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      size: 48,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text('Presupuesto Mensual', style: AppTextStyles.heading2),
+                  const SizedBox(height: 8),
+                  Text(
+                    '¡Hola, $userName!\nAún no has configurado tu presupuesto para este mes. Configúralo para empezar a registrar tus gastos.',
+                    style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AppColors.shadow,
+                          blurRadius: 24,
+                          offset: Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text('Monto Base / Ingreso Mensual (S/)', style: AppTextStyles.label),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: budgetController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              hintText: 'Ej: 2000.00',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(color: AppColors.border),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(color: AppColors.border),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(color: AppColors.primary),
+                              ),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return 'Ingresa un monto';
+                              if (double.tryParse(v) == null) return 'Monto inválido';
+                              if ((double.tryParse(v) ?? 0) <= 0) return 'Debe ser mayor que 0';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            height: 54,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (formKey.currentState?.validate() ?? false) {
+                                  final amount = double.parse(budgetController.text);
+                                  ref.read(budgetProvider.notifier).createBudget(amount);
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              ),
+                              child: const Text('Establecer Presupuesto', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

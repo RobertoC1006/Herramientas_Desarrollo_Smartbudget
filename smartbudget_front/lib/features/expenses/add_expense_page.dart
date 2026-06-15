@@ -110,20 +110,14 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
 
       final amount = double.tryParse(_amountController.text) ?? 0.0;
       final desc = _descriptionController.text.trim();
-      final info = CategoryUtils.getCategoryInfo(_selectedCategory!);
 
-      final transaction = TransactionItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: desc.isNotEmpty ? desc : _selectedCategory!,
-        amount: amount,
-        date: DateTime.now(),
+      ref.read(transactionsProvider.notifier).addTransaction(
         category: _selectedCategory!,
-        icon: info.icon,
-        categoryColor: info.color,
-        categoryBackground: info.background,
+        amount: amount,
+        description: desc,
+        date: DateTime.now(),
+        source: 'manual',
       );
-
-      ref.read(transactionsProvider.notifier).addTransaction(transaction);
 
       _amountController.clear();
       _descriptionController.clear();

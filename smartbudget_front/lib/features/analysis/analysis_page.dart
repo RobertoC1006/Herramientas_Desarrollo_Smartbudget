@@ -30,59 +30,79 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
 
   @override
   Widget build(BuildContext context) {
-    final transactions = ref.watch(transactionsProvider);
-    final expenses = transactions.where((t) => !t.isIncome).toList();
+    final transactionsState = ref.watch(transactionsProvider);
 
-    // Calculate expenses by category
-    final Map<String, double> expensesByCategory = {};
-    for (var expense in expenses) {
-      expensesByCategory[expense.category] =
-          (expensesByCategory[expense.category] ?? 0.0) + expense.amount;
-    }
-
-    final categories = expensesByCategory.keys.toList();
-
-    // Auto-select first category if none selected or if selected doesn't exist anymore
-    if (categories.isNotEmpty &&
-        (_selectedCategoryToReduce == null ||
-            !categories.contains(_selectedCategoryToReduce))) {
-      _selectedCategoryToReduce = categories.first;
-    } else if (categories.isEmpty) {
-      _selectedCategoryToReduce = null;
-    }
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Análisis', style: AppTextStyles.heading2),
-              const SizedBox(height: 4),
-              Text(
-                'Visualiza y optimiza tus finanzas',
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              _buildDistributionCard(expensesByCategory, categories),
-              const SizedBox(height: 24),
-
-              _buildWhatIfCard(expensesByCategory, categories),
-              const SizedBox(height: 30),
-
-              Text('Historial de Gastos', style: AppTextStyles.heading3),
-              const SizedBox(height: 16),
-              _buildHistoryList(expenses),
-              const SizedBox(height: 80),
-            ],
+    return transactionsState.when(
+      loading: () => const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      ),
+      error: (error, _) => Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text('Error al cargar datos del análisis: $error', textAlign: TextAlign.center),
           ),
         ),
       ),
+      data: (transactions) {
+        final expenses = transactions.where((t) => !t.isIncome).toList();
+
+        // Calculate expenses by category
+        final Map<String, double> expensesByCategory = {};
+        for (var expense in expenses) {
+          expensesByCategory[expense.category] =
+              (expensesByCategory[expense.category] ?? 0.0) + expense.amount;
+        }
+
+        final categories = expensesByCategory.keys.toList();
+
+        // Auto-select first category if none selected or if selected doesn't exist anymore
+        if (categories.isNotEmpty &&
+            (_selectedCategoryToReduce == null ||
+                !categories.contains(_selectedCategoryToReduce))) {
+          _selectedCategoryToReduce = categories.first;
+        } else if (categories.isEmpty) {
+          _selectedCategoryToReduce = null;
+        }
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Análisis', style: AppTextStyles.heading2),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Visualiza y optimiza tus finanzas',
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  _buildDistributionCard(expensesByCategory, categories),
+                  const SizedBox(height: 24),
+
+                  _buildWhatIfCard(expensesByCategory, categories),
+                  const SizedBox(height: 30),
+
+                  Text('Historial de Gastos', style: AppTextStyles.heading3),
+                  const SizedBox(height: 16),
+                  _buildHistoryList(expenses),
+                  const SizedBox(height: 80),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

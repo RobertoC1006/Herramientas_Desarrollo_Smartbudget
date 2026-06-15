@@ -21,8 +21,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    final initialBudget = ref.read(budgetProvider);
-    _budgetController = TextEditingController(text: initialBudget.toStringAsFixed(0));
+    _budgetController = TextEditingController();
   }
 
   @override
@@ -42,6 +41,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final user = authState.value;
+
+    final budgetState = ref.watch(budgetProvider);
+    budgetState.whenOrNull(
+      data: (summary) {
+        if (summary != null && _budgetController.text.isEmpty) {
+          _budgetController.text = summary.montoBase.toStringAsFixed(0);
+        }
+      },
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -157,12 +165,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           TextFormField(
             controller: _budgetController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            onChanged: (value) {
+            onFieldSubmitted: (value) {
               final newBudget = double.tryParse(value) ?? 0.0;
-              ref.read(budgetProvider.notifier).updateBudget(newBudget);
+              if (newBudget > 0) {
+                ref.read(budgetProvider.notifier).createBudget(newBudget);
+              }
             },
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              hintText: 'Ej: 2000',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: const BorderSide(color: AppColors.border),
@@ -190,9 +201,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   'Presupuesto configurado: ',
                   style: AppTextStyles.small.copyWith(color: AppColors.textPrimary, fontSize: 13),
                 ),
-                Text(
-                  'S/ ${ref.watch(budgetProvider).toStringAsFixed(2)}',
-                  style: AppTextStyles.small.copyWith(color: AppColors.primaryDark, fontWeight: FontWeight.bold, fontSize: 13),
+                ref.watch(budgetProvider).maybeWhen(
+                  data: (summary) => Text(
+                    summary != null ? 'S/ ${summary.montoBase.toStringAsFixed(2)}' : 'No configurado',
+                    style: AppTextStyles.small.copyWith(color: AppColors.primaryDark, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  orElse: () => const SizedBox(
+                    width: 12, height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 1.5),
+                  ),
                 ),
               ],
             ),
