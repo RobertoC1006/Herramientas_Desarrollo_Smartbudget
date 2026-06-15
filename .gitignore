@@ -45,4 +45,3 @@ logs/
 # ─── Browser Automation / Temporary Profiles ─────────────────────────────────
 chrome_log.txt
 edge_dev_profile/
-
