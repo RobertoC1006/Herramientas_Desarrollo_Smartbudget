@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -249,27 +250,26 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                '¿Ya tienes una cuenta? ',
-                                style: AppTextStyles.small,
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  context.go(LoginPage.routePath);
-                                },
-                                child: const Text(
-                                  'Inicia sesión',
-                                  style: TextStyle(
+                          Text.rich(
+                            TextSpan(
+                              text: '¿Ya tienes una cuenta? ',
+                              style: AppTextStyles.small,
+                              children: [
+                                TextSpan(
+                                  text: 'Inicia sesión',
+                                  style: const TextStyle(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 15,
                                   ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      context.go(LoginPage.routePath);
+                                    },
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),

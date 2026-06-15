@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -263,27 +264,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                           const SizedBox(height: 36),
 
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                '¿No tienes una cuenta? ',
-                                style: AppTextStyles.small,
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  context.go(RegisterPage.routePath);
-                                },
-                                child: const Text(
-                                  'Regístrate',
-                                  style: TextStyle(
+                          Text.rich(
+                            TextSpan(
+                              text: '¿No tienes una cuenta? ',
+                              style: AppTextStyles.small,
+                              children: [
+                                TextSpan(
+                                  text: 'Regístrate',
+                                  style: const TextStyle(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 15,
                                   ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      context.go(RegisterPage.routePath);
+                                    },
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
@@ -376,12 +376,16 @@ class _SocialButton extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 18),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
           ],
