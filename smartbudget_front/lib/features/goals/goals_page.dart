@@ -1,43 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/providers/goals_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../data/models/goal.dart';
 
-class Goal {
-  final String id;
-  final String name;
-  final double targetAmount;
-  double currentAmount;
-  final IconData icon;
-
-  Goal({
-    required this.id,
-    required this.name,
-    required this.targetAmount,
-    this.currentAmount = 0.0,
-    required this.icon,
-  });
-
-  double get progress => (currentAmount / targetAmount).clamp(0.0, 1.0);
-}
-
-class GoalsPage extends StatefulWidget {
+class GoalsPage extends ConsumerStatefulWidget {
   const GoalsPage({super.key});
 
   @override
-  State<GoalsPage> createState() => _GoalsPageState();
+  ConsumerState<GoalsPage> createState() => _GoalsPageState();
 }
 
-class _GoalsPageState extends State<GoalsPage> {
-  final List<Goal> _goals = [];
+class _GoalsPageState extends ConsumerState<GoalsPage> {
+  IconData _getGoalIcon(String name) {
+    final n = name.toLowerCase();
+    if (n.contains('viaje') || n.contains('vuelo') || n.contains('playa') || n.contains('vacaciones')) {
+      return Icons.flight;
+    } else if (n.contains('casa') || n.contains('hogar') || n.contains('depa') || n.contains('alquiler') || n.contains('constru')) {
+      return Icons.home;
+    } else if (n.contains('auto') || n.contains('carro') || n.contains('moto') || n.contains('vehiculo')) {
+      return Icons.directions_car;
+    } else if (n.contains('estudio') || n.contains('universidad') || n.contains('colegio') || n.contains('curso') || n.contains('educa')) {
+      return Icons.school;
+    } else if (n.contains('salud') || n.contains('medico') || n.contains('clinica') || n.contains('operacion')) {
+      return Icons.favorite_border;
+    }
+    return Icons.star_border;
+  }
 
   void _showAddGoalDialog() {
     showDialog(
       context: context,
       builder: (context) => const _AddGoalDialog(),
-    ).then((newGoal) {
-      if (newGoal != null && newGoal is Goal) {
-        setState(() {
-          _goals.add(newGoal);
+    ).then((result) {
+      if (result != null && result is Map<String, dynamic>) {
+        final name = result['nombre'] as String;
+        final targetAmount = result['monto_objetivo'] as double;
+        
+        ref.read(goalsProvider.notifier).addGoal(name, targetAmount).catchError((e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error al crear meta: $e')),
+            );
+          }
         });
       }
     });
@@ -50,7 +57,7 @@ class _GoalsPageState extends State<GoalsPage> {
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('Abonar a ${goal.name}', style: AppTextStyles.heading3),
+          title: Text('Abonar a ${goal.nombre}', style: AppTextStyles.heading3),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,8 +100,12 @@ class _GoalsPageState extends State<GoalsPage> {
       },
     ).then((amount) {
       if (amount != null && amount is double) {
-        setState(() {
-          goal.currentAmount += amount;
+        ref.read(goalsProvider.notifier).addContribution(goal.id, amount).catchError((e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error al abonar: $e')),
+            );
+          }
         });
       }
     });
@@ -102,6 +113,8 @@ class _GoalsPageState extends State<GoalsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final goalsState = ref.watch(goalsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -132,7 +145,39 @@ class _GoalsPageState extends State<GoalsPage> {
               ),
               const SizedBox(height: 30),
               Expanded(
-                child: _goals.isEmpty ? _buildEmptyState() : _buildGoalsList(),
+                child: goalsState.when(
+                  data: (goals) => goals.isEmpty
+                      ? _buildEmptyState()
+                      : RefreshIndicator(
+                          onRefresh: () => ref.read(goalsProvider.notifier).refresh(),
+                          child: ListView.separated(
+                            itemCount: goals.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 20),
+                            itemBuilder: (context, index) {
+                              final goal = goals[index];
+                              return _buildGoalCard(goal);
+                            },
+                          ),
+                        ),
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (err, stack) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline_rounded, color: AppColors.primary, size: 48),
+                        const SizedBox(height: 16),
+                        Text('Error al cargar metas', style: AppTextStyles.heading3),
+                        const SizedBox(height: 8),
+                        Text(err.toString(), style: AppTextStyles.body, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => ref.read(goalsProvider.notifier).refresh(),
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -148,7 +193,7 @@ class _GoalsPageState extends State<GoalsPage> {
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.primaryLight,
               shape: BoxShape.circle,
             ),
@@ -167,18 +212,8 @@ class _GoalsPageState extends State<GoalsPage> {
     );
   }
 
-  Widget _buildGoalsList() {
-    return ListView.separated(
-      itemCount: _goals.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 20),
-      itemBuilder: (context, index) {
-        final goal = _goals[index];
-        return _buildGoalCard(goal);
-      },
-    );
-  }
-
   Widget _buildGoalCard(Goal goal) {
+    final icon = _getGoalIcon(goal.nombre);
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -216,22 +251,14 @@ class _GoalsPageState extends State<GoalsPage> {
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(goal.icon, color: Colors.white, size: 20),
+                          child: Icon(icon, color: Colors.white, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          goal.name,
+                          goal.nombre,
                           style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.white),
-                      onPressed: () {
-                        setState(() {
-                          _goals.remove(goal);
-                        });
-                      },
                     ),
                   ],
                 ),
@@ -244,7 +271,7 @@ class _GoalsPageState extends State<GoalsPage> {
                       children: [
                         const Text('Progreso', style: TextStyle(color: Colors.white70, fontSize: 12)),
                         Text(
-                          'S/ ${goal.currentAmount.toStringAsFixed(2)}',
+                          'S/ ${goal.saldoAcumulado.toStringAsFixed(2)}',
                           style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                         ),
                       ],
@@ -254,7 +281,7 @@ class _GoalsPageState extends State<GoalsPage> {
                       children: [
                         const Text('Objetivo', style: TextStyle(color: Colors.white70, fontSize: 12)),
                         Text(
-                          'S/ ${goal.targetAmount.toStringAsFixed(2)}',
+                          'S/ ${goal.montoObjetivo.toStringAsFixed(2)}',
                           style: const TextStyle(color: Colors.white, fontSize: 16),
                         ),
                       ],
@@ -265,7 +292,7 @@ class _GoalsPageState extends State<GoalsPage> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: LinearProgressIndicator(
-                    value: goal.progress,
+                    value: goal.progreso,
                     minHeight: 8,
                     backgroundColor: Colors.white.withOpacity(0.2),
                     valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
@@ -275,8 +302,11 @@ class _GoalsPageState extends State<GoalsPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('${(goal.progress * 100).toInt()}% completado', style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                    Text('Faltan S/ ${(goal.targetAmount - goal.currentAmount).clamp(0, double.infinity).toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    Text('${(goal.progreso * 100).toInt()}% completado', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    Text(
+                      'Faltan S/ ${(goal.montoObjetivo - goal.saldoAcumulado).clamp(0, double.infinity).toStringAsFixed(2)}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
                   ],
                 ),
               ],
@@ -288,14 +318,17 @@ class _GoalsPageState extends State<GoalsPage> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton.icon(
-                onPressed: () => _showAddFoundsDialog(goal),
+                onPressed: goal.estaCompletada ? null : () => _showAddFoundsDialog(goal),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 icon: const Icon(Icons.add, color: Colors.white, size: 18),
-                label: const Text('Abonar a esta meta', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                label: Text(
+                  goal.estaCompletada ? 'Meta alcanzada' : 'Abonar a esta meta',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
           ),
@@ -408,7 +441,7 @@ class _AddGoalDialogState extends State<_AddGoalDialog> {
                 ),
                 const SizedBox(height: 16),
                 
-                const Text('Ícono', style: AppTextStyles.label),
+                const Text('Ícono (Visual)', style: AppTextStyles.label),
                 const SizedBox(height: 12),
                 GridView.builder(
                   shrinkWrap: true,
@@ -463,13 +496,10 @@ class _AddGoalDialogState extends State<_AddGoalDialog> {
                   child: ElevatedButton(
                     onPressed: () {
                       if (_formKey.currentState?.validate() ?? false) {
-                        final goal = Goal(
-                          id: DateTime.now().toString(),
-                          name: _nameController.text,
-                          targetAmount: double.parse(_amountController.text),
-                          icon: _icons[_selectedIconIndex]['icon'] as IconData,
-                        );
-                        Navigator.pop(context, goal);
+                        Navigator.pop(context, {
+                          'nombre': _nameController.text,
+                          'monto_objetivo': double.parse(_amountController.text),
+                        });
                       }
                     },
                     style: ElevatedButton.styleFrom(
