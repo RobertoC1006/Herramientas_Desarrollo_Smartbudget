@@ -41,9 +41,14 @@ class _OcrConfirmationPageState extends ConsumerState<OcrConfirmationPage> {
     _dateController = TextEditingController(
       text: '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
     );
+    _descriptionController.text = widget.ocrResult.description ?? '';
     
-    // Attempt to guess category based on merchant
-    _guessCategory(widget.ocrResult.merchant ?? '');
+    // Si la IA ya detectó y mapeó una categoría, la usamos. De lo contrario, usamos la heurística.
+    if (widget.ocrResult.category != null && widget.ocrResult.category!.isNotEmpty) {
+      _selectedCategory = widget.ocrResult.category;
+    } else {
+      _guessCategory(widget.ocrResult.merchant ?? '');
+    }
   }
 
   void _guessCategory(String merchant) {
