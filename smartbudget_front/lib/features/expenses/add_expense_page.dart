@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -53,30 +54,43 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
   Future<void> _scanDocument(String source) async {
     setState(() => _isScanning = true);
     try {
-      String? imagePath;
+      Uint8List? bytes;
+      String? fileName;
       
       if (source == 'camera') {
         final picker = ImagePicker();
         final pickedFile = await picker.pickImage(source: ImageSource.camera);
-        if (pickedFile != null) imagePath = pickedFile.path;
+        if (pickedFile != null) {
+          bytes = await pickedFile.readAsBytes();
+          fileName = pickedFile.name;
+        }
       } else if (source == 'gallery') {
         final picker = ImagePicker();
         final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-        if (pickedFile != null) imagePath = pickedFile.path;
+        if (pickedFile != null) {
+          bytes = await pickedFile.readAsBytes();
+          fileName = pickedFile.name;
+        }
       } else if (source == 'pdf') {
         final result = await FilePicker.pickFiles(
           type: FileType.custom,
           allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
         );
-        if (result != null && result.files.single.path != null) {
-          imagePath = result.files.single.path;
+        if (result != null) {
+          final file = result.files.single;
+          fileName = file.name;
+          if (file.bytes != null) {
+            bytes = file.bytes;
+          } else if (file.path != null) {
+            bytes = await XFile(file.path!).readAsBytes();
+          }
         }
       }
 
-      if (imagePath != null) {
+      if (bytes != null && fileName != null) {
         _showTopToast('Analizando documento...');
         
-        final ocrResult = await _ocrService.processImage(imagePath);
+        final ocrResult = await _ocrService.processImage(bytes, fileName);
         
         if (mounted) {
           setState(() => _isScanning = false);

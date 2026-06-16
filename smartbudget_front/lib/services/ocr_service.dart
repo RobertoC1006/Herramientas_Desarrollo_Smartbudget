@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import '../core/api_client.dart';
@@ -27,21 +28,21 @@ class OcrService {
 
   OcrService({ApiClient? apiClient}) : apiClient = apiClient ?? ApiClient();
 
-  Future<OcrResult> processImage(String imagePath) async {
+  Future<OcrResult> processImage(Uint8List bytes, String fileName) async {
     try {
-      final fileName = imagePath.split('/').last;
-      
       // Determinar content-type basado en la extensión
       String contentType = 'image/jpeg';
       if (fileName.toLowerCase().endsWith('.png')) {
         contentType = 'image/png';
       } else if (fileName.toLowerCase().endsWith('.webp')) {
         contentType = 'image/webp';
+      } else if (fileName.toLowerCase().endsWith('.pdf')) {
+        contentType = 'application/pdf';
       }
 
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          imagePath,
+        'file': MultipartFile.fromBytes(
+          bytes,
           filename: fileName,
           contentType: MediaType.parse(contentType),
         ),
