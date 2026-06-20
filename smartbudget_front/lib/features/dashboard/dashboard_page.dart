@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/budget_provider.dart';
 import '../../core/providers/transactions_provider.dart';
+import '../../core/providers/alerts_provider.dart';
+import '../../core/providers/smartscore_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../data/models/transaction.dart';
+import '../../data/models/smart_alert.dart';
+import '../../data/models/enums.dart' show TipoAlerta;
 import '../auth/auth_controller.dart';
 import '../expenses/add_expense_page.dart' show TransactionTile;
 
@@ -17,6 +21,8 @@ class DashboardPage extends ConsumerWidget {
     final budgetState = ref.watch(budgetProvider);
     final transactionsState = ref.watch(transactionsProvider);
     final authState = ref.watch(authControllerProvider);
+    final alertsState = ref.watch(alertsProvider);
+    final smartScoreState = ref.watch(smartScoreProvider);
 
     final userName = authState.value?.nombre ?? 'Usuario';
 
@@ -53,6 +59,8 @@ class DashboardPage extends ConsumerWidget {
                   onPressed: () {
                     ref.read(budgetProvider.notifier).refresh();
                     ref.read(transactionsProvider.notifier).refresh();
+                    ref.read(smartScoreProvider.notifier).refresh();
+                    ref.read(alertsProvider.notifier).refresh();
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                   child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
@@ -95,6 +103,9 @@ class DashboardPage extends ConsumerWidget {
                   const SizedBox(height: 24),
                   _buildIncomeExpenseRow(totalIncome, totalExpenses),
                   const SizedBox(height: 30),
+                  _buildAlertsSection(context, ref, alertsState),
+                  _buildSmartScoreSection(context, ref, smartScoreState),
+                  const SizedBox(height: 30),
                   const Text('Presupuesto Mensual', style: AppTextStyles.heading3),
                   const SizedBox(height: 16),
                   _buildBudgetProgress(budget, totalExpenses),
@@ -118,6 +129,209 @@ class DashboardPage extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAlertsSection(
+      BuildContext context, WidgetRef ref, AsyncValue<List<SmartAlert>> alertsState) {
+    return alertsState.maybeWhen(
+      data: (alerts) {
+        final unreadAlerts = alerts.where((a) => !a.leida).toList();
+        if (unreadAlerts.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Alertas Financieras', style: AppTextStyles.heading3),
+            const SizedBox(height: 12),
+            ...unreadAlerts.map((alert) {
+              Color typeColor;
+              IconData icon;
+              Color bgColor;
+
+              switch (alert.tipo) {
+                case TipoAlerta.critica:
+                  typeColor = AppColors.danger;
+                  icon = Icons.warning_amber_rounded;
+                  bgColor = AppColors.danger.withValues(alpha: 0.08);
+                  break;
+                case TipoAlerta.advertencia:
+                  typeColor = AppColors.warning;
+                  icon = Icons.info_outline;
+                  bgColor = AppColors.warning.withValues(alpha: 0.08);
+                  break;
+                case TipoAlerta.motivacional:
+                  typeColor = AppColors.primary;
+                  icon = Icons.celebration_outlined;
+                  bgColor = AppColors.primary.withValues(alpha: 0.08);
+                  break;
+                case TipoAlerta.informativa:
+                  typeColor = AppColors.info;
+                  icon = Icons.notifications_none_outlined;
+                  bgColor = AppColors.info.withValues(alpha: 0.08);
+                  break;
+              }
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: typeColor.withValues(alpha: 0.2), width: 1),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: CircleAvatar(
+                    backgroundColor: typeColor.withValues(alpha: 0.15),
+                    child: Icon(icon, color: typeColor),
+                  ),
+                  title: Text(
+                    alert.titulo,
+                    style: AppTextStyles.label.copyWith(color: AppColors.textPrimary),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      alert.mensaje,
+                      style: AppTextStyles.small.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ),
+                  trailing: IconButton(
+                    icon: Icon(Icons.check_circle_outline_rounded, color: typeColor),
+                    tooltip: 'Marcar como leída',
+                    onPressed: () {
+                      ref.read(alertsProvider.notifier).markAlertAsRead(alert.id);
+                    },
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 18),
+          ],
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildSmartScoreSection(
+      BuildContext context, WidgetRef ref, AsyncValue<int> scoreState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Mi Salud Financiera', style: AppTextStyles.heading3),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 15,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+          child: scoreState.when(
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            ),
+            error: (err, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Text(
+                  'No se pudo cargar el SmartScore',
+                  style: AppTextStyles.small.copyWith(color: AppColors.danger),
+                ),
+              ),
+            ),
+            data: (score) {
+              Color scoreColor;
+              String evaluation;
+              String tip;
+              IconData icon;
+
+              if (score >= 80) {
+                scoreColor = AppColors.primary;
+                evaluation = 'Excelente';
+                tip = '¡Felicidades! Mantienes una salud financiera de alto nivel.';
+                icon = Icons.savings_outlined;
+              } else if (score >= 50) {
+                scoreColor = AppColors.warning;
+                evaluation = 'Regular';
+                tip = 'Estás dentro de tu presupuesto. Intenta ahorrar un poco más.';
+                icon = Icons.trending_up;
+              } else {
+                scoreColor = AppColors.danger;
+                evaluation = 'Crítico';
+                tip = 'Has excedido límites de presupuesto. Revisa tus gastos urgentes.';
+                icon = Icons.warning_amber_outlined;
+              }
+
+              return Row(
+                children: [
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 76,
+                        height: 76,
+                        child: CircularProgressIndicator(
+                          value: score / 100,
+                          strokeWidth: 8,
+                          backgroundColor: AppColors.background,
+                          valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
+                        ),
+                      ),
+                      Text(
+                        '$score',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: scoreColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(icon, color: scoreColor, size: 18),
+                            const SizedBox(width: 6),
+                            Text(
+                              evaluation,
+                              style: AppTextStyles.label.copyWith(
+                                color: scoreColor,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          tip,
+                          style: AppTextStyles.small.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
