@@ -429,7 +429,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
   // ── Dropdown ─────────────────────────────────────────────────────────────────
   Widget _buildCategoryDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedCategory,
+      initialValue: _selectedCategory,
       hint: const Text('Selecciona una categoría'),
       isExpanded: true,
       decoration: _inputDecoration(),

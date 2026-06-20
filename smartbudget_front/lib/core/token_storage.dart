@@ -6,11 +6,7 @@ class TokenStorage {
   final FlutterSecureStorage _storage;
 
   const TokenStorage({
-    FlutterSecureStorage storage = const FlutterSecureStorage(
-      aOptions: AndroidOptions(
-        encryptedSharedPreferences: true,
-      ),
-    ),
+    FlutterSecureStorage storage = const FlutterSecureStorage(),
   }) : _storage = storage;
 
   Future<void> saveToken(String token) async {

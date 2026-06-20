@@ -270,7 +270,7 @@ class _OcrConfirmationPageState extends ConsumerState<OcrConfirmationPage> {
 
   Widget _buildCategoryDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedCategory,
+      initialValue: _selectedCategory,
       hint: const Text('Selecciona una categoría'),
       isExpanded: true,
       decoration: _inputDecoration(),
