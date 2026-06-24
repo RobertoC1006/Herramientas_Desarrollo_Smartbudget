@@ -38,7 +38,8 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
     for (var expense in expenses) {
       expensesByCategory[expense.category] =
           (expensesByCategory[expense.category] ?? 0.0) + expense.amount;
-    }
+    }q
+    
 
     final categories = expensesByCategory.keys.toList();
     final totalExpenses = expenses.fold(
