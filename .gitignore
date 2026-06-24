@@ -1,45 +1,43 @@
-# Miscellaneous
-*.class
-*.log
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
 *.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+.Python
+*.egg-info/
+dist/
+build/
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
+# ─── Entornos virtuales ───────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+
+# ─── Variables de entorno (NUNCA subir al repo) ────────────────────────────
+.env
+.env.docker
+.env.local
+.env.production
+
+# ─── IDEs ────────────────────────────────────────────────────────────────────
 .idea/
+.vscode/
+*.swp
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# ─── Testing ─────────────────────────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
+# ─── Base de datos ────────────────────────────────────────────────────────────
+*.db
+*.sqlite3
 
-# Symbolication related
-app.*.symbols
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/
 
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# ─── Browser Automation / Temporary Profiles ─────────────────────────────────
+chrome_log.txt
+edge_dev_profile/
