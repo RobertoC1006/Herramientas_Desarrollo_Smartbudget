@@ -17,6 +17,7 @@ class DashboardPage extends ConsumerStatefulWidget {
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool mostrarTodo = false;
+  String textoBusqueda = '';
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +33,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         .fold(0.0, (sum, item) => sum + item.amount);
 
     final balance = budget - totalExpenses + totalIncome;
+    final filteredTransactions = transactions.where((tx) {
+  final text = textoBusqueda.toLowerCase();
+
+return tx.title.toLowerCase().contains(text) ||
+    tx.category.toLowerCase().contains(text);
+}).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -58,6 +65,27 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   _buildBudgetProgress(budget, totalExpenses),
                   const SizedBox(height: 30),
 
+TextField(
+  onChanged: (value) {
+    setState(() {
+      textoBusqueda = value.toLowerCase();
+      mostrarTodo = false;
+    });
+  },
+  decoration: InputDecoration(
+    hintText: 'Buscar transacción...',
+    prefixIcon: const Icon(Icons.search),
+    filled: true,
+    fillColor: AppColors.surface,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide.none,
+    ),
+  ),
+),
+
+const SizedBox(height: 20),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -65,7 +93,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         'Transacciones Recientes',
                         style: AppTextStyles.heading3,
                       ),
-                      if (transactions.length > 4)
+                   if (filteredTransactions.length > 4)
                         TextButton.icon(
                           onPressed: () {
                             setState(() {
@@ -84,8 +112,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     ],
                   ),
 
-                  const SizedBox(height: 16),
-                  _buildRecentTransactions(transactions),
+_buildRecentTransactions(filteredTransactions),
                   const SizedBox(height: 100),
                 ],
               ),
