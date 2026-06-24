@@ -1,4 +1,3 @@
-2026/06/24-14:38:27.797 42ec Creating DB C:\Users\nancy\AppData\Local\Temp\flutter_tools.ffb48b1e\flutter_tools_chrome_device.7b14f8fd\Default\Session Storage since it was missing.
-2026/06/24-14:38:27.910 42ec Reusing MANIFEST C:\Users\nancy\AppData\Local\Temp\flutter_tools.ffb48b1e\flutter_tools_chrome_device.7b14f8fd\Default\Session Storage/MANIFEST-000001
-2026/06/24-14:38:27.913 42ec Recovering log #3
-2026/06/24-14:38:27.921 42ec Reusing old log C:\Users\nancy\AppData\Local\Temp\flutter_tools.ffb48b1e\flutter_tools_chrome_device.7b14f8fd\Default\Session Storage/000003.log 
+2026/06/24-14:55:49.707 5afc Reusing MANIFEST C:\Users\nancy\AppData\Local\Temp\flutter_tools.b1c2234d\flutter_tools_chrome_device.1d9ede33\Default\Session Storage/MANIFEST-000001
+2026/06/24-14:55:49.713 5afc Recovering log #3
+2026/06/24-14:55:49.720 5afc Reusing old log C:\Users\nancy\AppData\Local\Temp\flutter_tools.b1c2234d\flutter_tools_chrome_device.1d9ede33\Default\Session Storage/000003.log 
