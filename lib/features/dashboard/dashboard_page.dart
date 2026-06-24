@@ -8,16 +8,28 @@ import '../../core/theme/app_text_styles.dart';
 import '../../data/models/transaction.dart';
 import '../expenses/add_expense_page.dart' show TransactionTile;
 
-class DashboardPage extends ConsumerWidget {
+class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends ConsumerState<DashboardPage> {
+  bool mostrarTodo = false;
+
+  @override
+  Widget build(BuildContext context) {
     final budget = ref.watch(budgetProvider);
     final transactions = ref.watch(transactionsProvider);
 
-    final totalExpenses = transactions.where((t) => !t.isIncome).fold(0.0, (sum, item) => sum + item.amount);
-    final totalIncome = transactions.where((t) => t.isIncome).fold(0.0, (sum, item) => sum + item.amount);
+    final totalExpenses = transactions
+        .where((t) => !t.isIncome)
+        .fold(0.0, (sum, item) => sum + item.amount);
+
+    final totalIncome = transactions
+        .where((t) => t.isIncome)
+        .fold(0.0, (sum, item) => sum + item.amount);
 
     final balance = budget - totalExpenses + totalIncome;
 
@@ -38,23 +50,43 @@ class DashboardPage extends ConsumerWidget {
                   const SizedBox(height: 24),
                   _buildIncomeExpenseRow(budget + totalIncome, totalExpenses),
                   const SizedBox(height: 30),
-                  const Text('Presupuesto Mensual', style: AppTextStyles.heading3),
+                  const Text(
+                    'Presupuesto Mensual',
+                    style: AppTextStyles.heading3,
+                  ),
                   const SizedBox(height: 16),
                   _buildBudgetProgress(budget, totalExpenses),
                   const SizedBox(height: 30),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Transacciones Recientes', style: AppTextStyles.heading3),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text('Ver todo'),
+                      const Text(
+                        'Transacciones Recientes',
+                        style: AppTextStyles.heading3,
                       ),
+                      if (transactions.length > 4)
+                        TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              mostrarTodo = !mostrarTodo;
+                            });
+                          },
+                          icon: Icon(
+                            mostrarTodo
+                                ? Icons.keyboard_arrow_up
+                                : Icons.keyboard_arrow_down,
+                          ),
+                          label: Text(
+                            mostrarTodo ? 'Ver menos' : 'Ver todo',
+                          ),
+                        ),
                     ],
                   ),
+
                   const SizedBox(height: 16),
                   _buildRecentTransactions(transactions),
-                  const SizedBox(height: 100), // Espacio extra para el FAB en web/desktop
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
@@ -71,14 +103,13 @@ class DashboardPage extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '¡Hola, Usuario!',
-              style: AppTextStyles.heading2,
-            ),
+            Text('¡Hola, Usuario!', style: AppTextStyles.heading2),
             const SizedBox(height: 4),
             Text(
               'Bienvenido de vuelta',
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -162,7 +193,9 @@ class DashboardPage extends ConsumerWidget {
   }
 
   Widget _buildBudgetProgress(double budget, double totalExpenses) {
-    final progress = budget > 0 ? (totalExpenses / budget).clamp(0.0, 1.0) : 0.0;
+    final progress =
+        budget > 0 ? (totalExpenses / budget).clamp(0.0, 1.0) : 0.0;
+
     final remaining = (budget - totalExpenses).clamp(0.0, double.infinity);
 
     return Container(
@@ -186,7 +219,9 @@ class DashboardPage extends ConsumerWidget {
               const Text('Gastado', style: AppTextStyles.label),
               Text(
                 'S/ ${totalExpenses.toStringAsFixed(2)} / S/ ${budget.toStringAsFixed(2)}',
-                style: AppTextStyles.label.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.label.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -198,7 +233,11 @@ class DashboardPage extends ConsumerWidget {
               minHeight: 10,
               backgroundColor: AppColors.background,
               valueColor: AlwaysStoppedAnimation<Color>(
-                progress > 0.9 ? AppColors.danger : (progress > 0.7 ? AppColors.warning : AppColors.primary),
+                progress > 0.9
+                    ? AppColors.danger
+                    : progress > 0.7
+                        ? AppColors.warning
+                        : AppColors.primary,
               ),
             ),
           ),
@@ -217,28 +256,61 @@ class DashboardPage extends ConsumerWidget {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 32),
         alignment: Alignment.center,
-        child: Column(children: [
-          Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.border),
-          const SizedBox(height: 12),
-          Text('No hay transacciones aún',
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
-        ]),
+        child: Column(
+          children: [
+            Icon(
+              Icons.receipt_long_outlined,
+              size: 48,
+              color: AppColors.border,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No hay transacciones aún',
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    final recent = transactions.take(5).toList();
+    final visibleTransactions =
+        mostrarTodo ? transactions : transactions.take(4).toList();
 
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
-          BoxShadow(color: AppColors.shadow, blurRadius: 15, offset: Offset(0, 5))
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 15,
+            offset: Offset(0, 5),
+          ),
         ],
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(
-        children: recent.map((tx) => TransactionTile(transaction: tx)).toList(),
+        children: [
+          ...visibleTransactions.map(
+            (tx) => TransactionTile(transaction: tx),
+          ),
+
+          if (!mostrarTodo && transactions.length > 4)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              alignment: Alignment.center,
+              child: Text(
+                'Y ${transactions.length - 4} transacciones más...',
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -288,7 +360,10 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(title, style: AppTextStyles.small),
           const SizedBox(height: 4),
-          Text(amount, style: AppTextStyles.label.copyWith(fontSize: 16)),
+          Text(
+            amount,
+            style: AppTextStyles.label.copyWith(fontSize: 16),
+          ),
         ],
       ),
     );
