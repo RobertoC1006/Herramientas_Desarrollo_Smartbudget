@@ -57,6 +57,8 @@ return tx.title.toLowerCase().contains(text) ||
                   const SizedBox(height: 24),
                   _buildIncomeExpenseRow(budget + totalIncome, totalExpenses),
                   const SizedBox(height: 30),
+                  _buildBudgetStatusCard(budget, totalExpenses),
+                  const SizedBox(height: 30),
                   const Text(
                     'Presupuesto Mensual',
                     style: AppTextStyles.heading3,
@@ -218,10 +220,89 @@ _buildRecentTransactions(filteredTransactions),
       ],
     );
   }
+Widget _buildBudgetStatusCard(double budget, double totalExpenses) {
+  final percentage = budget > 0 ? (totalExpenses / budget).clamp(0.0, 1.0) : 0.0;
+  final available = (budget - totalExpenses).clamp(0.0, double.infinity);
+  final percentageText = (percentage * 100).toStringAsFixed(0);
 
-  Widget _buildBudgetProgress(double budget, double totalExpenses) {
-    final progress =
-        budget > 0 ? (totalExpenses / budget).clamp(0.0, 1.0) : 0.0;
+  String statusText = 'Bajo control';
+  IconData statusIcon = Icons.check_circle_outline;
+  Color statusColor = AppColors.primary;
+
+  if (percentage >= 0.9) {
+    statusText = 'Presupuesto casi agotado';
+    statusIcon = Icons.error_outline;
+    statusColor = AppColors.danger;
+  } else if (percentage >= 0.7) {
+    statusText = 'Cuidado con tus gastos';
+    statusIcon = Icons.warning_amber_rounded;
+    statusColor = AppColors.warning;
+  }
+
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(24),
+      boxShadow: const [
+        BoxShadow(
+          color: AppColors.shadow,
+          blurRadius: 15,
+          offset: Offset(0, 5),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: statusColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(
+            statusIcon,
+            color: statusColor,
+            size: 30,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Estado del presupuesto',
+                style: AppTextStyles.label.copyWith(
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Usado: $percentageText%  •  Disponible: S/ ${available.toStringAsFixed(2)}',
+                style: AppTextStyles.small.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                statusText,
+                style: AppTextStyles.label.copyWith(
+                  color: statusColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildBudgetProgress(double budget, double totalExpenses) {
+  final progress =
+      budget > 0 ? (totalExpenses / budget).clamp(0.0, 1.0) : 0.0;
 
     final remaining = (budget - totalExpenses).clamp(0.0, double.infinity);
 
