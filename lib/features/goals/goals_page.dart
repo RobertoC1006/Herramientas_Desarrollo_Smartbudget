@@ -21,7 +21,7 @@ class Goal {
 }
 
 class GoalsPage extends StatefulWidget {
-  const GoalsPage({Key? key}) : super(key: key);
+  const GoalsPage({super.key});
 
   @override
   State<GoalsPage> createState() => GoalsPageState();
@@ -139,62 +139,147 @@ class GoalsPageState extends State<GoalsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-              /// HEADER
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Mis Metas', style: AppTextStyles.heading2),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Ahorra para tus sueños',
+                          style: AppTextStyles.body.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
                     children: [
-                      Text('Mis Metas', style: AppTextStyles.heading2),
-                      const SizedBox(height: 4),
-                      Text('Ahorra para tus sueños', style: AppTextStyles.body),
+                      if (_goals.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: IconButton(
+                            onPressed: showIASuggestion,
+                            icon: const Icon(Icons.auto_awesome_outlined),
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      FloatingActionButton(
+                        mini: true,
+                        onPressed: _showAddGoalDialog,
+                        backgroundColor: AppColors.primary,
+                        child: const Icon(Icons.add, color: Colors.white),
+                      ),
                     ],
                   ),
-                  FloatingActionButton(
-                    mini: true,
-                    onPressed: _showAddGoalDialog,
-                    backgroundColor: AppColors.primary,
-                    child: const Icon(Icons.add, color: Colors.white),
-                  )
                 ],
               ),
-
               const SizedBox(height: 20),
-
-              /// TOTAL
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
+                    colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x334F46E5),
+                      blurRadius: 14,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  "S/ ${_totalAhorrado.toStringAsFixed(2)}",
-                  style: const TextStyle(color: Colors.white, fontSize: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ahorro total',
+                      style: AppTextStyles.small.copyWith(color: Colors.white70),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'S/ ${_totalAhorrado.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _goals.isEmpty
+                          ? 'Crea tu primera meta para empezar a ahorrar.'
+                          : 'Tu progreso está en marcha.',
+                      style: AppTextStyles.body.copyWith(color: Colors.white70),
+                    ),
+                  ],
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              Expanded(
-                child: _goals.isEmpty
-                    ? const Center(child: Text("No hay metas aún"))
-                    : ListView.builder(
-                        itemCount: _goals.length,
-                        itemBuilder: (_, i) => _buildGoalCard(_goals[i]),
+              if (_goals.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x1F111827),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
                       ),
-              )
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.savings_outlined,
+                        size: 48,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No hay metas aún',
+                        style: AppTextStyles.heading3,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Agrega una meta para empezar a organizar tus ahorros.',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _goals.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) => _buildGoalCard(_goals[i]),
+                ),
             ],
           ),
         ),
@@ -203,22 +288,97 @@ class GoalsPageState extends State<GoalsPage> {
   }
 
   Widget _buildGoalCard(Goal goal) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(15),
-        child: Column(
-          children: [
-            Text(goal.name, style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 10),
-            LinearProgressIndicator(value: goal.progress),
-            const SizedBox(height: 10),
-            Text("S/ ${goal.currentAmount} / ${goal.targetAmount}"),
-            ElevatedButton(
-              onPressed: () => _showAddFoundsDialog(goal),
-              child: const Text("Abonar"),
-            )
-          ],
-        ),
+    final progressPercent = (goal.progress * 100).round();
+    final remaining = (goal.targetAmount - goal.currentAmount).clamp(0.0, double.infinity);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1F111827),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(goal.icon, color: AppColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(goal.name, style: AppTextStyles.heading3),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Meta: S/ ${goal.targetAmount.toStringAsFixed(2)}',
+                      style: AppTextStyles.small.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '$progressPercent% completado',
+                style: AppTextStyles.small.copyWith(fontWeight: FontWeight.w600),
+              ),
+              Text(
+                'S/ ${goal.currentAmount.toStringAsFixed(2)}',
+                style: AppTextStyles.small.copyWith(color: AppColors.primary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: goal.progress,
+              minHeight: 10,
+              backgroundColor: AppColors.background,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                goal.progress >= 1 ? AppColors.primary : AppColors.primary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Faltan S/ ${remaining.toStringAsFixed(2)}',
+                style: AppTextStyles.small.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: () => _showAddFoundsDialog(goal),
+                icon: const Icon(Icons.add),
+                label: const Text('Abonar'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -238,28 +398,59 @@ class _AddGoalDialogState extends State<_AddGoalDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Nueva Meta"),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: Row(
+        children: [
+          Icon(Icons.flag_outlined, color: AppColors.primary),
+          const SizedBox(width: 8),
+          const Text('Nueva Meta'),
+        ],
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(controller: _nameController),
-          TextField(controller: _amountController),
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              hintText: 'Nombre de la meta',
+              prefixIcon: Icon(Icons.emoji_events_outlined),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              hintText: 'Monto objetivo',
+              prefixIcon: Icon(Icons.attach_money),
+            ),
+          ),
         ],
       ),
       actions: [
-        ElevatedButton(
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
           onPressed: () {
+            final name = _nameController.text.trim();
+            final amount = double.tryParse(_amountController.text) ?? 0;
+
+            if (name.isEmpty || amount <= 0) {
+              return;
+            }
+
             final goal = Goal(
               id: DateTime.now().toString(),
-              name: _nameController.text,
-              targetAmount:
-                  double.tryParse(_amountController.text) ?? 0,
+              name: name,
+              targetAmount: amount,
               icon: Icons.star,
             );
             Navigator.pop(context, goal);
           },
-          child: const Text("Crear"),
-        )
+          child: const Text('Crear'),
+        ),
       ],
     );
   }
