@@ -108,7 +108,7 @@ const SizedBox(height: 20),
                                 : Icons.keyboard_arrow_down,
                           ),
                           label: Text(
-                            mostrarTodo ? 'Ver menos' : 'Ver todo',
+                            mostrarTodo ? 'Ver menos' : 'Ver más',
                           ),
                         ),
                     ],
@@ -385,8 +385,50 @@ Widget _buildBudgetProgress(double budget, double totalExpenses) {
 
     final visibleTransactions =
         mostrarTodo ? transactions : transactions.take(4).toList();
+    final expanded = mostrarTodo && transactions.length > 4;
 
-    return Container(
+    final content = Column(
+      children: [
+        if (expanded)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Todas las transacciones',
+                style: AppTextStyles.heading3,
+              ),
+            ),
+          ),
+        ...visibleTransactions.map(
+          (tx) => TransactionTile(transaction: tx),
+        ),
+        if (!mostrarTodo && transactions.length > 4)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            alignment: Alignment.center,
+            child: Text(
+              'Y ${transactions.length - 4} transacciones más...',
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+      ],
+    );
+
+    final expandedHeight = MediaQuery.of(context).size.height * 0.7;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      height: expanded ? expandedHeight : null,
+      constraints: expanded
+          ? BoxConstraints(
+              maxHeight: expandedHeight,
+            )
+          : null,
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
@@ -399,27 +441,9 @@ Widget _buildBudgetProgress(double budget, double totalExpenses) {
         ],
       ),
       clipBehavior: Clip.hardEdge,
-      child: Column(
-        children: [
-          ...visibleTransactions.map(
-            (tx) => TransactionTile(transaction: tx),
-          ),
-
-          if (!mostrarTodo && transactions.length > 4)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              alignment: Alignment.center,
-              child: Text(
-                'Y ${transactions.length - 4} transacciones más...',
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-        ],
-      ),
+      child: expanded
+          ? SingleChildScrollView(child: content)
+          : content,
     );
   }
 }
