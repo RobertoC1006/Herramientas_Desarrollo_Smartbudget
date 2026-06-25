@@ -98,18 +98,121 @@ const SizedBox(height: 20),
                    if (filteredTransactions.length > 4)
                         TextButton.icon(
                           onPressed: () {
-                            setState(() {
-                              mostrarTodo = !mostrarTodo;
-                            });
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (pageContext) {
+                                  return Scaffold(
+                                    backgroundColor: AppColors.background,
+                                    appBar: AppBar(
+                                      backgroundColor: AppColors.surface,
+                                      foregroundColor: Colors.black,
+                                      elevation: 0,
+                                      title: const Text('Todas las transacciones'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.of(pageContext).pop(),
+                                          child: const Text('Mostrar menos'),
+                                        ),
+                                      ],
+                                    ),
+                                    body: SafeArea(
+                                      child: Center(
+                                        child: ConstrainedBox(
+                                          constraints: const BoxConstraints(maxWidth: 800),
+                                          child: ListView(
+                                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(20),
+                                                decoration: BoxDecoration(
+                                                  gradient: const LinearGradient(
+                                                    colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                  ),
+                                                  borderRadius: BorderRadius.circular(24),
+                                                  boxShadow: const [
+                                                    BoxShadow(
+                                                      color: Color(0x334F46E5),
+                                                      blurRadius: 16,
+                                                      offset: Offset(0, 8),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.all(12),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white.withValues(alpha: 0.2),
+                                                        borderRadius: BorderRadius.circular(16),
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.account_balance_wallet_outlined,
+                                                        color: Colors.white,
+                                                        size: 24,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 14),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          const Text(
+                                                            'Movimientos',
+                                                            style: TextStyle(
+                                                              color: Colors.white,
+                                                              fontSize: 18,
+                                                              fontWeight: FontWeight.w700,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(height: 6),
+                                                          Text(
+                                                            'Revisa todos tus movimientos en una sola vista.',
+                                                            style: AppTextStyles.body.copyWith(
+                                                              color: Colors.white.withValues(alpha: 0.9),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius: BorderRadius.circular(24),
+                                                  boxShadow: const [
+                                                    BoxShadow(
+                                                      color: Color(0x1F111827),
+                                                      blurRadius: 14,
+                                                      offset: Offset(0, 6),
+                                                    ),
+                                                  ],
+                                                ),
+                                                clipBehavior: Clip.hardEdge,
+                                                child: Column(
+                                                  children: [
+                                                    ...filteredTransactions.map(
+                                                      (tx) => TransactionTile(transaction: tx),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
                           },
-                          icon: Icon(
-                            mostrarTodo
-                                ? Icons.keyboard_arrow_up
-                                : Icons.keyboard_arrow_down,
-                          ),
-                          label: Text(
-                            mostrarTodo ? 'Ver menos' : 'Ver más',
-                          ),
+                          icon: const Icon(Icons.open_in_full),
+                          label: const Text('Ver más'),
                         ),
                     ],
                   ),
@@ -359,7 +462,10 @@ Widget _buildBudgetProgress(double budget, double totalExpenses) {
     );
   }
 
-  Widget _buildRecentTransactions(List<TransactionItem> transactions) {
+  Widget _buildRecentTransactions(
+    List<TransactionItem> transactions, {
+    bool forceExpand = false,
+  }) {
     if (transactions.isEmpty) {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 32),
@@ -383,9 +489,9 @@ Widget _buildBudgetProgress(double budget, double totalExpenses) {
       );
     }
 
-    final visibleTransactions =
-        mostrarTodo ? transactions : transactions.take(4).toList();
-    final expanded = mostrarTodo && transactions.length > 4;
+    final showAll = forceExpand || mostrarTodo;
+    final visibleTransactions = showAll ? transactions : transactions.take(4).toList();
+    final expanded = showAll && transactions.length > 4;
 
     final content = Column(
       children: [
@@ -403,7 +509,7 @@ Widget _buildBudgetProgress(double budget, double totalExpenses) {
         ...visibleTransactions.map(
           (tx) => TransactionTile(transaction: tx),
         ),
-        if (!mostrarTodo && transactions.length > 4)
+        if (!showAll && transactions.length > 4)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
