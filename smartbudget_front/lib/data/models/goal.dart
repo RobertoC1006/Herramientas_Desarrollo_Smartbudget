@@ -37,7 +37,7 @@ class Goal {
   factory Goal.fromJson(Map<String, dynamic> json) {
     return Goal(
       id: json['id'] as int,
-      userId: json['user_id'] as int,
+      userId: json['user_id'] as int? ?? 0,
       nombre: json['nombre'] as String,
       descripcion: json['descripcion'] as String?,
       montoObjetivo: (json['monto_objetivo'] as num).toDouble(),
@@ -46,7 +46,9 @@ class Goal {
       fechaLimite: json['fecha_limite'] == null
           ? null
           : DateTime.parse(json['fecha_limite'] as String),
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
       completedAt: json['completed_at'] == null
           ? null
           : DateTime.parse(json['completed_at'] as String),

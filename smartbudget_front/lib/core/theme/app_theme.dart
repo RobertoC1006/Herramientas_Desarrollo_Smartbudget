@@ -13,7 +13,6 @@ class AppTheme {
         seedColor: AppColors.primary,
         primary: AppColors.primary,
         surface: AppColors.surface,
-        background: AppColors.background,
         error: AppColors.danger,
       ),
       fontFamily: 'Roboto',

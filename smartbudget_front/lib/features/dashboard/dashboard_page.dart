@@ -1,13 +1,91 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/budget_provider.dart';
+import '../../core/providers/transactions_provider.dart';
+import '../../core/providers/alerts_provider.dart';
+import '../../core/providers/smartscore_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../data/models/transaction.dart';
+import '../../data/models/smart_alert.dart';
+import '../../data/models/enums.dart' show TipoAlerta;
+import '../auth/auth_controller.dart';
+import '../expenses/add_expense_page.dart' show TransactionTile;
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final budgetState = ref.watch(budgetProvider);
+    final transactionsState = ref.watch(transactionsProvider);
+    final authState = ref.watch(authControllerProvider);
+    final alertsState = ref.watch(alertsProvider);
+    final smartScoreState = ref.watch(smartScoreProvider);
+
+    final userName = authState.value?.nombre ?? 'Usuario';
+
+    // 1. Mostrar loading si se están cargando los datos iniciales
+    if (budgetState.isLoading || transactionsState.isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+
+    // 2. Mostrar error de red o de base de datos
+    if (budgetState.hasError || transactionsState.hasError) {
+      final error = budgetState.error ?? transactionsState.error;
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.danger),
+                const SizedBox(height: 16),
+                Text(
+                  'Error al conectar con el servidor:\n$error',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.body,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    ref.read(budgetProvider.notifier).refresh();
+                    ref.read(transactionsProvider.notifier).refresh();
+                    ref.read(smartScoreProvider.notifier).refresh();
+                    ref.read(alertsProvider.notifier).refresh();
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                  child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final budgetSummary = budgetState.value;
+    final transactions = transactionsState.value ?? [];
+
+    // 3. Si no hay presupuesto creado para el mes, mostramos la pantalla de creación
+    if (budgetSummary == null) {
+      return _buildNoBudgetScreen(context, ref, userName);
+    }
+
+    // 4. Si el presupuesto existe, renderizamos el Dashboard con datos reales
+    final balance = budgetSummary.saldoDisponible;
+    final totalExpenses = budgetSummary.totalGastado;
+    final totalIncome = budgetSummary.montoBase + budgetSummary.ingresosAdicionales;
+    final budget = budgetSummary.montoBase;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -19,15 +97,18 @@ class DashboardPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(),
+                  _buildHeader(userName),
                   const SizedBox(height: 30),
-                  _buildBalanceCard(),
+                  _buildBalanceCard(balance),
                   const SizedBox(height: 24),
-                  _buildIncomeExpenseRow(),
+                  _buildIncomeExpenseRow(totalIncome, totalExpenses),
+                  const SizedBox(height: 30),
+                  _buildAlertsSection(context, ref, alertsState),
+                  _buildSmartScoreSection(context, ref, smartScoreState),
                   const SizedBox(height: 30),
                   const Text('Presupuesto Mensual', style: AppTextStyles.heading3),
                   const SizedBox(height: 16),
-                  _buildBudgetProgress(),
+                  _buildBudgetProgress(budget, totalExpenses),
                   const SizedBox(height: 30),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -40,8 +121,8 @@ class DashboardPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _buildRecentTransactions(),
-                  const SizedBox(height: 100), // Espacio extra para el FAB en web/desktop
+                  _buildRecentTransactions(transactions),
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
@@ -51,7 +132,210 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildAlertsSection(
+      BuildContext context, WidgetRef ref, AsyncValue<List<SmartAlert>> alertsState) {
+    return alertsState.maybeWhen(
+      data: (alerts) {
+        final unreadAlerts = alerts.where((a) => !a.leida).toList();
+        if (unreadAlerts.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Alertas Financieras', style: AppTextStyles.heading3),
+            const SizedBox(height: 12),
+            ...unreadAlerts.map((alert) {
+              Color typeColor;
+              IconData icon;
+              Color bgColor;
+
+              switch (alert.tipo) {
+                case TipoAlerta.critica:
+                  typeColor = AppColors.danger;
+                  icon = Icons.warning_amber_rounded;
+                  bgColor = AppColors.danger.withValues(alpha: 0.08);
+                  break;
+                case TipoAlerta.advertencia:
+                  typeColor = AppColors.warning;
+                  icon = Icons.info_outline;
+                  bgColor = AppColors.warning.withValues(alpha: 0.08);
+                  break;
+                case TipoAlerta.motivacional:
+                  typeColor = AppColors.primary;
+                  icon = Icons.celebration_outlined;
+                  bgColor = AppColors.primary.withValues(alpha: 0.08);
+                  break;
+                case TipoAlerta.informativa:
+                  typeColor = AppColors.info;
+                  icon = Icons.notifications_none_outlined;
+                  bgColor = AppColors.info.withValues(alpha: 0.08);
+                  break;
+              }
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: typeColor.withValues(alpha: 0.2), width: 1),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: CircleAvatar(
+                    backgroundColor: typeColor.withValues(alpha: 0.15),
+                    child: Icon(icon, color: typeColor),
+                  ),
+                  title: Text(
+                    alert.titulo,
+                    style: AppTextStyles.label.copyWith(color: AppColors.textPrimary),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      alert.mensaje,
+                      style: AppTextStyles.small.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ),
+                  trailing: IconButton(
+                    icon: Icon(Icons.check_circle_outline_rounded, color: typeColor),
+                    tooltip: 'Marcar como leída',
+                    onPressed: () {
+                      ref.read(alertsProvider.notifier).markAlertAsRead(alert.id);
+                    },
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 18),
+          ],
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildSmartScoreSection(
+      BuildContext context, WidgetRef ref, AsyncValue<int> scoreState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Mi Salud Financiera', style: AppTextStyles.heading3),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 15,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+          child: scoreState.when(
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            ),
+            error: (err, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Text(
+                  'No se pudo cargar el SmartScore',
+                  style: AppTextStyles.small.copyWith(color: AppColors.danger),
+                ),
+              ),
+            ),
+            data: (score) {
+              Color scoreColor;
+              String evaluation;
+              String tip;
+              IconData icon;
+
+              if (score >= 80) {
+                scoreColor = AppColors.primary;
+                evaluation = 'Excelente';
+                tip = '¡Felicidades! Mantienes una salud financiera de alto nivel.';
+                icon = Icons.savings_outlined;
+              } else if (score >= 50) {
+                scoreColor = AppColors.warning;
+                evaluation = 'Regular';
+                tip = 'Estás dentro de tu presupuesto. Intenta ahorrar un poco más.';
+                icon = Icons.trending_up;
+              } else {
+                scoreColor = AppColors.danger;
+                evaluation = 'Crítico';
+                tip = 'Has excedido límites de presupuesto. Revisa tus gastos urgentes.';
+                icon = Icons.warning_amber_outlined;
+              }
+
+              return Row(
+                children: [
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 76,
+                        height: 76,
+                        child: CircularProgressIndicator(
+                          value: score / 100,
+                          strokeWidth: 8,
+                          backgroundColor: AppColors.background,
+                          valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
+                        ),
+                      ),
+                      Text(
+                        '$score',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: scoreColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(icon, color: scoreColor, size: 18),
+                            const SizedBox(width: 6),
+                            Text(
+                              evaluation,
+                              style: AppTextStyles.label.copyWith(
+                                color: scoreColor,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          tip,
+                          style: AppTextStyles.small.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader(String userName) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -59,7 +343,7 @@ class DashboardPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '¡Hola, Usuario!',
+              '¡Hola, $userName!',
               style: AppTextStyles.heading2,
             ),
             const SizedBox(height: 4),
@@ -78,7 +362,7 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBalanceCard() {
+  Widget _buildBalanceCard(double balance) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -101,7 +385,7 @@ class DashboardPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Balance Total',
+            'Balance Disponible',
             style: TextStyle(
               color: Colors.white70,
               fontSize: 16,
@@ -109,52 +393,26 @@ class DashboardPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            '\$12,450.00',
-            style: TextStyle(
+          Text(
+            'S/ ${balance.toStringAsFixed(2)}',
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
               fontWeight: FontWeight.w800,
             ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.trending_up, color: Colors.white, size: 16),
-                    SizedBox(width: 6),
-                    Text(
-                      '+8.5% este mes',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildIncomeExpenseRow() {
+  Widget _buildIncomeExpenseRow(double totalIncome, double totalExpenses) {
     return Row(
       children: [
         Expanded(
           child: _SummaryCard(
-            title: 'Ingresos',
-            amount: '\$4,200.00',
+            title: 'Presupuesto/Ingresos',
+            amount: 'S/ ${totalIncome.toStringAsFixed(2)}',
             icon: Icons.arrow_downward,
             iconColor: AppColors.primary,
             backgroundColor: AppColors.primaryLight,
@@ -164,17 +422,20 @@ class DashboardPage extends StatelessWidget {
         Expanded(
           child: _SummaryCard(
             title: 'Gastos',
-            amount: '\$1,850.00',
+            amount: 'S/ ${totalExpenses.toStringAsFixed(2)}',
             icon: Icons.arrow_upward,
             iconColor: AppColors.danger,
-            backgroundColor: AppColors.danger.withOpacity(0.1),
+            backgroundColor: AppColors.danger.withValues(alpha: 0.1),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBudgetProgress() {
+  Widget _buildBudgetProgress(double budget, double totalExpenses) {
+    final progress = budget > 0 ? (totalExpenses / budget).clamp(0.0, 1.0) : 0.0;
+    final remaining = (budget - totalExpenses).clamp(0.0, double.infinity);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -195,7 +456,7 @@ class DashboardPage extends StatelessWidget {
             children: [
               const Text('Gastado', style: AppTextStyles.label),
               Text(
-                '\$1,850 / \$3,000',
+                'S/ ${totalExpenses.toStringAsFixed(2)} / S/ ${budget.toStringAsFixed(2)}',
                 style: AppTextStyles.label.copyWith(color: AppColors.textSecondary),
               ),
             ],
@@ -203,16 +464,18 @@ class DashboardPage extends StatelessWidget {
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: const LinearProgressIndicator(
-              value: 1850 / 3000,
+            child: LinearProgressIndicator(
+              value: progress,
               minHeight: 10,
               backgroundColor: AppColors.background,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                progress > 0.9 ? AppColors.danger : (progress > 0.7 ? AppColors.warning : AppColors.primary),
+              ),
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Te quedan \$1,150 para este mes',
+          Text(
+            'Te quedan S/ ${remaining.toStringAsFixed(2)} para este mes',
             style: AppTextStyles.small,
           ),
         ],
@@ -220,61 +483,148 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentTransactions() {
-    final transactions = [
-      {'title': 'Supermercado', 'date': 'Hoy', 'amount': '-\$85.00', 'icon': Icons.shopping_cart_outlined},
-      {'title': 'Salario', 'date': 'Ayer', 'amount': '+\$2,100.00', 'icon': Icons.work_outline, 'isIncome': true},
-      {'title': 'Netflix', 'date': '15 Abr', 'amount': '-\$15.99', 'icon': Icons.movie_outlined},
-      {'title': 'Restaurante', 'date': '14 Abr', 'amount': '-\$45.50', 'icon': Icons.restaurant_outlined},
-    ];
+  Widget _buildRecentTransactions(List<TransactionItem> transactions) {
+    if (transactions.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        alignment: Alignment.center,
+        child: Column(children: [
+          const Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.border),
+          const SizedBox(height: 12),
+          Text('No hay transacciones aún',
+              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+        ]),
+      );
+    }
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: transactions.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final tx = transactions[index];
-        final isIncome = tx['isIncome'] == true;
+    final recent = transactions.take(5).toList();
 
-        return Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border.withOpacity(0.5)),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(color: AppColors.shadow, blurRadius: 15, offset: Offset(0, 5))
+        ],
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Column(
+        children: recent.map((tx) => TransactionTile(transaction: tx)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildNoBudgetScreen(BuildContext context, WidgetRef ref, String userName) {
+    final TextEditingController budgetController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      size: 48,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text('Presupuesto Mensual', style: AppTextStyles.heading2),
+                  const SizedBox(height: 8),
+                  Text(
+                    '¡Hola, $userName!\nAún no has configurado tu presupuesto para este mes. Configúralo para empezar a registrar tus gastos.',
+                    style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AppColors.shadow,
+                          blurRadius: 24,
+                          offset: Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text('Monto Base / Ingreso Mensual (S/)', style: AppTextStyles.label),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: budgetController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              hintText: 'Ej: 2000.00',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(color: AppColors.border),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(color: AppColors.border),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(color: AppColors.primary),
+                              ),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return 'Ingresa un monto';
+                              if (double.tryParse(v) == null) return 'Monto inválido';
+                              if ((double.tryParse(v) ?? 0) <= 0) return 'Debe ser mayor que 0';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            height: 54,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (formKey.currentState?.validate() ?? false) {
+                                  final amount = double.parse(budgetController.text);
+                                  ref.read(budgetProvider.notifier).createBudget(amount);
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              ),
+                              child: const Text('Establecer Presupuesto', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isIncome ? AppColors.primaryLight : AppColors.surfaceSoft,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                tx['icon'] as IconData,
-                color: isIncome ? AppColors.primary : AppColors.textSecondary,
-              ),
-            ),
-            title: Text(
-              tx['title'] as String,
-              style: AppTextStyles.label.copyWith(fontSize: 16),
-            ),
-            subtitle: Text(
-              tx['date'] as String,
-              style: AppTextStyles.small,
-            ),
-            trailing: Text(
-              tx['amount'] as String,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: isIncome ? AppColors.primary : AppColors.textPrimary,
-              ),
-            ),
-          ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

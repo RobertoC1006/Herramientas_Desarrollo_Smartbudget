@@ -60,13 +60,19 @@ def calcular_score(db: Session, user_id: int) -> int:
     puntos_metas = 30.0 if meta_con_progreso is not None else 0.0
 
     # --- CRITERIO 3: Sin gastos inusuales (20 pts) ---
-    # Contamos las alertas críticas del mes actual
+    # Contamos las alertas críticas del mes actual (optimización: rango de fecha en lugar de extract)
+    start_date = datetime(anio_actual, mes_actual, 1)
+    if mes_actual == 12:
+        end_date = datetime(anio_actual + 1, 1, 1)
+    else:
+        end_date = datetime(anio_actual, mes_actual + 1, 1)
+
     alertas_criticas = db.query(Alert).filter(
         and_(
             Alert.user_id == user_id,
             Alert.tipo == TipoAlerta.CRITICA,
-            extract('month', Alert.created_at) == mes_actual,
-            extract('year', Alert.created_at) == anio_actual
+            Alert.created_at >= start_date,
+            Alert.created_at < end_date
         )
     ).count()
     puntos_alertas = max(0.0, 20.0 - (alertas_criticas * 10.0))
