@@ -8,7 +8,7 @@ y tipado estricto.
 
 from datetime import datetime, date
 from typing import List, Optional
-from sqlalchemy import String, ForeignKey, Float, Integer, Enum as SQLEnum, Text, Date, DateTime, func
+from sqlalchemy import String, ForeignKey, Float, Integer, Enum as SQLEnum, Text, Date, DateTime, func, Index
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from core.enums import CategoriaGasto, EstadoMeta, FuenteGasto, TipoAlerta
@@ -37,6 +37,9 @@ class Budget(Base):
     Es la fuente principal de saldo disponible.
     """
     __tablename__ = "budgets"
+    __table_args__ = (
+        Index("idx_budget_user_mes_anio", "user_id", "mes", "anio"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
@@ -89,6 +92,9 @@ class Goal(Base):
 class Expense(Base):
     """Gastos registrados."""
     __tablename__ = "expenses"
+    __table_args__ = (
+        Index("idx_expense_user_fecha", "user_id", "fecha"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
@@ -120,6 +126,9 @@ class Alert(Base):
 class SmartScoreSnapshot(Base):
     """Historial de SmartScore por mes."""
     __tablename__ = "smart_score_history"
+    __table_args__ = (
+        Index("idx_smartscore_user_mes_anio", "user_id", "mes", "anio"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))

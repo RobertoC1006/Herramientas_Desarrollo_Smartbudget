@@ -80,11 +80,18 @@ def listar_gastos_mes(db: Session, user_id: int, mes: int, anio: int) -> list[Ex
     Devuelve la lista de gastos realizados en un mes y año específicos.
     Se ordenan por fecha de manera descendente (los más recientes primero).
     """
+    # Optimización: rango de fechas en lugar de extract()
+    start_date = date(anio, mes, 1)
+    if mes == 12:
+        end_date = date(anio + 1, 1, 1)
+    else:
+        end_date = date(anio, mes + 1, 1)
+
     gastos = db.query(Expense).filter(
         and_(
             Expense.user_id == user_id,
-            extract('month', Expense.fecha) == mes,
-            extract('year', Expense.fecha) == anio
+            Expense.fecha >= start_date,
+            Expense.fecha < end_date
         )
     ).order_by(Expense.fecha.desc(), Expense.id.desc()).all()
     
@@ -95,14 +102,21 @@ def calcular_gastos_por_categoria(db: Session, user_id: int, mes: int, anio: int
     Calcula cuánto se ha gastado en cada categoría durante un mes específico.
     Retorna un diccionario: {"comida": 320.0, "transporte": 150.0, ...}
     """
+    # Optimización: rango de fechas en lugar de extract()
+    start_date = date(anio, mes, 1)
+    if mes == 12:
+        end_date = date(anio + 1, 1, 1)
+    else:
+        end_date = date(anio, mes + 1, 1)
+
     resultados = db.query(
         Expense.categoria, 
         func.sum(Expense.monto).label("total")
     ).filter(
         and_(
             Expense.user_id == user_id,
-            extract('month', Expense.fecha) == mes,
-            extract('year', Expense.fecha) == anio
+            Expense.fecha >= start_date,
+            Expense.fecha < end_date
         )
     ).group_by(Expense.categoria).all()
     

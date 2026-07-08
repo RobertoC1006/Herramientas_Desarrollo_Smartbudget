@@ -8,7 +8,8 @@ Responsabilidades:
 4. Entregar una lista de alertas ordenadas por prioridad para el consumo en el frontend de Flutter.
 """
 
-from datetime import date
+from datetime import date, datetime
+import datetime as dt
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, extract, func, not_
 
@@ -29,6 +30,13 @@ def _obtener_promedio_historico_categoria(
     excluyendo el mes actual.
     """
     # 1. Agrupar gastos anteriores por mes y año para sumar el monto mensual
+    # Optimización: rango de fechas para excluir el mes actual
+    start_date = dt.date(anio_actual, mes_actual, 1)
+    if mes_actual == 12:
+        end_date = dt.date(anio_actual + 1, 1, 1)
+    else:
+        end_date = dt.date(anio_actual, mes_actual + 1, 1)
+
     resultados_mensuales = db.query(
         extract('year', Expense.fecha).label('anio'),
         extract('month', Expense.fecha).label('mes'),
@@ -39,8 +47,8 @@ def _obtener_promedio_historico_categoria(
             Expense.categoria == categoria,
             not_(
                 and_(
-                    extract('year', Expense.fecha) == anio_actual,
-                    extract('month', Expense.fecha) == mes_actual
+                    Expense.fecha >= start_date,
+                    Expense.fecha < end_date
                 )
             )
         )
@@ -67,6 +75,19 @@ def generar_alertas_usuario(db: Session, user_id: int) -> None:
     mes_actual = hoy.month
     anio_actual = hoy.year
 
+    # Optimización de fechas para consultas
+    start_date = dt.date(anio_actual, mes_actual, 1)
+    if mes_actual == 12:
+        end_date = dt.date(anio_actual + 1, 1, 1)
+    else:
+        end_date = dt.date(anio_actual, mes_actual + 1, 1)
+
+    start_datetime = dt.datetime(anio_actual, mes_actual, 1)
+    if mes_actual == 12:
+        end_datetime = dt.datetime(anio_actual + 1, 1, 1)
+    else:
+        end_datetime = dt.datetime(anio_actual, mes_actual + 1, 1)
+
     # --- REGLA 1: ADVERTENCIA (Gasto > 80% antes del día 20) ---
     try:
         budget = obtener_presupuesto_activo(db, user_id)
@@ -79,8 +100,8 @@ def generar_alertas_usuario(db: Session, user_id: int) -> None:
                     and_(
                         Alert.user_id == user_id,
                         Alert.titulo == titulo_adv,
-                        extract('month', Alert.created_at) == mes_actual,
-                        extract('year', Alert.created_at) == anio_actual
+                        Alert.created_at >= start_datetime,
+                        Alert.created_at < end_datetime
                     )
                 ).first()
 
@@ -108,8 +129,8 @@ def generar_alertas_usuario(db: Session, user_id: int) -> None:
     ).filter(
         and_(
             Expense.user_id == user_id,
-            extract('month', Expense.fecha) == mes_actual,
-            extract('year', Expense.fecha) == anio_actual
+            Expense.fecha >= start_date,
+            Expense.fecha < end_date
         )
     ).group_by(Expense.categoria).all()
 
@@ -128,8 +149,8 @@ def generar_alertas_usuario(db: Session, user_id: int) -> None:
                 and_(
                     Alert.user_id == user_id,
                     Alert.titulo == titulo_critica,
-                    extract('month', Alert.created_at) == mes_actual,
-                    extract('year', Alert.created_at) == anio_actual
+                    Alert.created_at >= start_datetime,
+                    Alert.created_at < end_datetime
                 )
             ).first()
 
@@ -197,8 +218,8 @@ def generar_alertas_usuario(db: Session, user_id: int) -> None:
                         and_(
                             Alert.user_id == user_id,
                             Alert.titulo == titulo_mot,
-                            extract('month', Alert.created_at) == mes_actual,
-                            extract('year', Alert.created_at) == anio_actual
+                            Alert.created_at >= start_datetime,
+                            Alert.created_at < end_datetime
                         )
                     ).first()
 

@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import '../../core/providers/transactions_provider.dart';
+import '../../core/providers/smartscore_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../data/models/transaction.dart';
+import '../../data/models/smart_core_snapshot.dart';
 import '../expenses/add_expense_page.dart' show TransactionTile;
 
 class AnalysisPage extends ConsumerStatefulWidget {
@@ -31,6 +33,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
   @override
   Widget build(BuildContext context) {
     final transactionsState = ref.watch(transactionsProvider);
+    final historyState = ref.watch(smartScoreHistoryProvider);
 
     return transactionsState.when(
       loading: () => const Scaffold(
@@ -91,6 +94,9 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
                   const SizedBox(height: 24),
 
                   _buildWhatIfCard(expensesByCategory, categories),
+                  const SizedBox(height: 24),
+
+                  _buildScoreHistoryCard(context, ref, historyState),
                   const SizedBox(height: 30),
 
                   Text('Historial de Gastos', style: AppTextStyles.heading3),
@@ -103,6 +109,209 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildScoreHistoryCard(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<SmartScoreSnapshot>> historyState,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 15,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.show_chart,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Historial de Salud Financiera',
+                      style: AppTextStyles.heading3.copyWith(fontSize: 16),
+                    ),
+                    Text(
+                      'Evolución mensual de tu SmartScore',
+                      style: AppTextStyles.small,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 30),
+          historyState.when(
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 40.0),
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            ),
+            error: (error, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40.0),
+                child: Text(
+                  'No se pudo cargar el historial de SmartScore',
+                  style: AppTextStyles.small.copyWith(color: AppColors.danger),
+                ),
+              ),
+            ),
+            data: (snapshots) {
+              if (snapshots.isEmpty) {
+                return Container(
+                  height: 180,
+                  alignment: Alignment.center,
+                  child: Text(
+                    'No hay suficiente historial para calcular tu evolución',
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                );
+              }
+
+              // Ordenar cronológicamente para el gráfico (del más antiguo al más nuevo)
+              // El backend ya los retorna ordenados, pero nos aseguramos
+              final sortedSnaps = List<SmartScoreSnapshot>.from(snapshots)
+                ..sort((a, b) {
+                  if (a.anio != b.anio) return a.anio.compareTo(b.anio);
+                  return a.mes.compareTo(b.mes);
+                });
+
+              final spots = sortedSnaps.asMap().entries.map((entry) {
+                return FlSpot(entry.key.toDouble(), entry.value.score.toDouble());
+              }).toList();
+
+              return Column(
+                children: [
+                  SizedBox(
+                    height: 180,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 16, top: 10),
+                      child: LineChart(
+                        LineChartData(
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: false,
+                            getDrawingHorizontalLine: (value) {
+                              return FlLine(
+                                color: AppColors.divider,
+                                strokeWidth: 1,
+                              );
+                            },
+                          ),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  final index = value.toInt();
+                                  if (index < 0 || index >= sortedSnaps.length) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  final snap = sortedSnaps[index];
+                                  final monthNames = [
+                                    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                                    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+                                  ];
+                                  final mesStr = (snap.mes >= 1 && snap.mes <= 12)
+                                      ? monthNames[snap.mes - 1]
+                                      : snap.mes.toString();
+                                  return SideTitleWidget(
+                                    meta: meta,
+                                    space: 4,
+                                    child: Text(
+                                      mesStr,
+                                      style: AppTextStyles.xSmall.copyWith(fontSize: 10),
+                                    ),
+                                  );
+                                },
+                                reservedSize: 22,
+                              ),
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  if (value % 20 != 0) return const SizedBox.shrink();
+                                  return SideTitleWidget(
+                                    meta: meta,
+                                    child: Text(
+                                      '${value.toInt()}',
+                                      style: AppTextStyles.xSmall.copyWith(fontSize: 10),
+                                    ),
+                                  );
+                                },
+                                reservedSize: 28,
+                              ),
+                            ),
+                          ),
+                          borderData: FlBorderData(
+                            show: false,
+                          ),
+                          minX: 0,
+                          maxX: (sortedSnaps.length - 1).toDouble(),
+                          minY: 0,
+                          maxY: 100,
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: spots,
+                              isCurved: true,
+                              color: AppColors.primary,
+                              barWidth: 4,
+                              isStrokeCapRound: true,
+                              dotData: const FlDotData(
+                                show: true,
+                              ),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
