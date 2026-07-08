@@ -41,7 +41,11 @@ class DashboardPage extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.danger),
+                const Icon(
+                  Icons.error_outline_rounded,
+                  size: 48,
+                  color: AppColors.danger,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Error al conectar con el servidor:\n$error',
@@ -54,8 +58,13 @@ class DashboardPage extends ConsumerWidget {
                     ref.read(budgetProvider.notifier).refresh();
                     ref.read(transactionsProvider.notifier).refresh();
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                  child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                  ),
+                  child: const Text(
+                    'Reintentar',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),
@@ -75,7 +84,8 @@ class DashboardPage extends ConsumerWidget {
     // 4. Si el presupuesto existe, renderizamos el Dashboard con datos reales
     final balance = budgetSummary.saldoDisponible;
     final totalExpenses = budgetSummary.totalGastado;
-    final totalIncome = budgetSummary.montoBase + budgetSummary.ingresosAdicionales;
+    final totalIncome =
+        budgetSummary.montoBase + budgetSummary.ingresosAdicionales;
     final budget = budgetSummary.montoBase;
 
     return Scaffold(
@@ -91,18 +101,24 @@ class DashboardPage extends ConsumerWidget {
                 children: [
                   _buildHeader(userName),
                   const SizedBox(height: 30),
-                  _buildBalanceCard(balance),
+                  _buildBalanceCard(balance: balance, totalIncome: totalIncome),
                   const SizedBox(height: 24),
                   _buildIncomeExpenseRow(totalIncome, totalExpenses),
                   const SizedBox(height: 30),
-                  const Text('Presupuesto Mensual', style: AppTextStyles.heading3),
+                  const Text(
+                    'Presupuesto Mensual',
+                    style: AppTextStyles.heading3,
+                  ),
                   const SizedBox(height: 16),
                   _buildBudgetProgress(budget, totalExpenses),
                   const SizedBox(height: 30),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Transacciones Recientes', style: AppTextStyles.heading3),
+                      const Text(
+                        'Transacciones Recientes',
+                        style: AppTextStyles.heading3,
+                      ),
                       TextButton(
                         onPressed: () {},
                         child: const Text('Ver todo'),
@@ -128,14 +144,13 @@ class DashboardPage extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '¡Hola, $userName!',
-              style: AppTextStyles.heading2,
-            ),
+            Text('¡Hola, $userName!', style: AppTextStyles.heading2),
             const SizedBox(height: 4),
             Text(
               'Bienvenido de vuelta',
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -148,48 +163,11 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildBalanceCard(double balance) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 20,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Balance Disponible',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'S/ ${balance.toStringAsFixed(2)}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
+  Widget _buildBalanceCard({
+    required double balance,
+    required double totalIncome,
+  }) {
+    return _BalanceCard(balance: balance, totalIncome: totalIncome);
   }
 
   Widget _buildIncomeExpenseRow(double totalIncome, double totalExpenses) {
@@ -219,8 +197,11 @@ class DashboardPage extends ConsumerWidget {
   }
 
   Widget _buildBudgetProgress(double budget, double totalExpenses) {
-    final progress = budget > 0 ? (totalExpenses / budget).clamp(0.0, 1.0) : 0.0;
-    final remaining = (budget - totalExpenses).clamp(0.0, double.infinity);
+    final progress = budget > 0
+        ? (totalExpenses / budget).clamp(0.0, 1.0)
+        : 0.0;
+    final remaining = budget - totalExpenses;
+    final isOverBudget = remaining < 0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -243,7 +224,9 @@ class DashboardPage extends ConsumerWidget {
               const Text('Gastado', style: AppTextStyles.label),
               Text(
                 'S/ ${totalExpenses.toStringAsFixed(2)} / S/ ${budget.toStringAsFixed(2)}',
-                style: AppTextStyles.label.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.label.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -255,14 +238,25 @@ class DashboardPage extends ConsumerWidget {
               minHeight: 10,
               backgroundColor: AppColors.background,
               valueColor: AlwaysStoppedAnimation<Color>(
-                progress > 0.9 ? AppColors.danger : (progress > 0.7 ? AppColors.warning : AppColors.primary),
+                isOverBudget
+                    ? AppColors.danger
+                    : (progress > 0.9
+                          ? AppColors.danger
+                          : (progress > 0.7
+                                ? AppColors.warning
+                                : AppColors.primary)),
               ),
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            'Te quedan S/ ${remaining.toStringAsFixed(2)} para este mes',
-            style: AppTextStyles.small,
+            isOverBudget
+                ? 'Has superado tu presupuesto por S/ ${remaining.abs().toStringAsFixed(2)}'
+                : 'Te quedan S/ ${remaining.toStringAsFixed(2)} para este mes',
+            style: AppTextStyles.small.copyWith(
+              color: isOverBudget ? AppColors.danger : AppColors.textSecondary,
+              fontWeight: isOverBudget ? FontWeight.w700 : FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -274,12 +268,22 @@ class DashboardPage extends ConsumerWidget {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 32),
         alignment: Alignment.center,
-        child: Column(children: [
-          const Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.border),
-          const SizedBox(height: 12),
-          Text('No hay transacciones aún',
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
-        ]),
+        child: Column(
+          children: [
+            const Icon(
+              Icons.receipt_long_outlined,
+              size: 48,
+              color: AppColors.border,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No hay transacciones aún',
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -290,7 +294,11 @@ class DashboardPage extends ConsumerWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
-          BoxShadow(color: AppColors.shadow, blurRadius: 15, offset: Offset(0, 5))
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 15,
+            offset: Offset(0, 5),
+          ),
         ],
       ),
       clipBehavior: Clip.hardEdge,
@@ -300,7 +308,11 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildNoBudgetScreen(BuildContext context, WidgetRef ref, String userName) {
+  Widget _buildNoBudgetScreen(
+    BuildContext context,
+    WidgetRef ref,
+    String userName,
+  ) {
     final TextEditingController budgetController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
@@ -333,7 +345,9 @@ class DashboardPage extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     '¡Hola, $userName!\nAún no has configurado tu presupuesto para este mes. Configúralo para empezar a registrar tus gastos.',
-                    style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
@@ -355,32 +369,55 @@ class DashboardPage extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Text('Monto Base / Ingreso Mensual (S/)', style: AppTextStyles.label),
+                          const Text(
+                            'Monto Base / Ingreso Mensual (S/)',
+                            style: AppTextStyles.label,
+                          ),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: budgetController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                             decoration: InputDecoration(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
                               hintText: 'Ej: 2000.00',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(color: AppColors.border),
+                                borderSide: const BorderSide(
+                                  color: AppColors.border,
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(color: AppColors.border),
+                                borderSide: const BorderSide(
+                                  color: AppColors.border,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(color: AppColors.primary),
+                                borderSide: const BorderSide(
+                                  color: AppColors.primary,
+                                ),
                               ),
                             ),
                             validator: (v) {
-                              if (v == null || v.isEmpty) return 'Ingresa un monto';
-                              if (double.tryParse(v) == null) return 'Monto inválido';
-                              if ((double.tryParse(v) ?? 0) <= 0) return 'Debe ser mayor que 0';
+                              if (v == null || v.isEmpty) {
+                                return 'Ingresa un monto';
+                              }
+                              if (double.tryParse(v) == null) {
+                                return 'Monto inválido';
+                              }
+                              if ((double.tryParse(v) ?? 0) <= 0) {
+                                return 'Debe ser mayor que 0';
+                              }
                               return null;
                             },
                           ),
@@ -390,15 +427,28 @@ class DashboardPage extends ConsumerWidget {
                             child: ElevatedButton(
                               onPressed: () {
                                 if (formKey.currentState?.validate() ?? false) {
-                                  final amount = double.parse(budgetController.text);
-                                  ref.read(budgetProvider.notifier).createBudget(amount);
+                                  final amount = double.parse(
+                                    budgetController.text,
+                                  );
+                                  ref
+                                      .read(budgetProvider.notifier)
+                                      .createBudget(amount);
                                 }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                               ),
-                              child: const Text('Establecer Presupuesto', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                              child: const Text(
+                                'Establecer Presupuesto',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -410,6 +460,150 @@ class DashboardPage extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _BalanceCard extends StatelessWidget {
+  final double balance;
+  final double totalIncome;
+
+  const _BalanceCard({required this.balance, required this.totalIncome});
+
+  @override
+  Widget build(BuildContext context) {
+    final isOverBudget = balance < 0;
+    final exceededAmount = balance.abs();
+    final baseForProgress = totalIncome > 0 ? totalIncome : exceededAmount;
+    final overflowProgress = baseForProgress > 0
+        ? (exceededAmount / baseForProgress).clamp(0.08, 1.0)
+        : 0.0;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 550),
+      curve: Curves.easeOutCubic,
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isOverBudget
+              ? const [Color(0xFFE5484D), Color(0xFFC5282E)]
+              : const [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: isOverBudget
+                ? AppColors.danger.withValues(alpha: 0.24)
+                : AppColors.shadow,
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          if (isOverBudget)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: overflowProgress),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.easeOutExpo,
+                builder: (context, value, _) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: Container(
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      alignment: Alignment.centerLeft,
+                      child: FractionallySizedBox(
+                        widthFactor: value,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          Padding(
+            padding: EdgeInsets.only(bottom: isOverBudget ? 30 : 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        isOverBudget
+                            ? 'Presupuesto excedido'
+                            : 'Balance Disponible',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.78),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (isOverBudget)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Icon(
+                          Icons.trending_up_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  child: Text(
+                    'S/ ${balance.toStringAsFixed(2)}',
+                    key: ValueKey(isOverBudget),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                if (isOverBudget) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Te excediste por S/ ${exceededAmount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.86),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

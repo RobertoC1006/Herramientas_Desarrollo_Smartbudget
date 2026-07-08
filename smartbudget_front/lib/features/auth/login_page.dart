@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/app_toast.dart';
 import '../dashboard/main_layout.dart';
 import 'auth_controller.dart';
 import 'register_page.dart';
@@ -37,44 +38,48 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final isValid = _formKey.currentState?.validate() ?? false;
 
     if (!isValid) return;
-    
+
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
     // Bypass local para pruebas
     if (email == 'admin' && password == '123456') {
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Bienvenido, Admin (Modo Local)')));
+        message: 'Bienvenido, Admin (Modo Local)',
+        icon: Icons.verified_user_outlined,
+      );
       context.go(MainLayout.routePath);
       return;
     }
 
     await ref
         .read(authControllerProvider.notifier)
-        .login(
-          email: email,
-          password: password,
-        );
+        .login(email: email, password: password);
 
     final authState = ref.read(authControllerProvider);
 
     authState.whenOrNull(
       data: (user) {
         if (user != null && mounted) {
-          ScaffoldMessenger.of(
+          showAppToast(
             context,
-          ).showSnackBar(SnackBar(content: Text('Bienvenido, ${user.nombre}')));
-          
+            message: 'Bienvenido, ${user.nombre}',
+            icon: Icons.waving_hand_rounded,
+          );
+
           context.go(MainLayout.routePath);
         }
       },
       error: (error, _) {
         if (!mounted) return;
 
-        ScaffoldMessenger.of(
+        showAppToast(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+          message: error.toString(),
+          icon: Icons.error_outline_rounded,
+          accentColor: AppColors.danger,
+        );
       },
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_toast.dart';
 import '../analysis/analysis_page.dart';
 import '../expenses/add_expense_page.dart';
 import '../goals/goals_page.dart';
@@ -33,9 +34,11 @@ class _MainLayoutState extends State<MainLayout> {
       body: _pages[_currentIndex],
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Acción de la varita mágica (ej. IA)
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('¡Asistente IA muy pronto!')),
+          // AcciÃ³n de la varita mÃ¡gica (ej. IA)
+          showAppToast(
+            context,
+            message: '¡Asistente IA muy pronto!',
+            icon: Icons.auto_awesome,
           );
         },
         child: const Icon(Icons.auto_awesome),
@@ -85,7 +88,7 @@ class _MainLayoutState extends State<MainLayout> {
                   BottomNavigationBarItem(
                     icon: Icon(Icons.bar_chart_outlined),
                     activeIcon: Icon(Icons.bar_chart),
-                    label: 'Análisis',
+                    label: 'AnÃ¡lisis',
                   ),
                   BottomNavigationBarItem(
                     icon: Icon(Icons.person_outline),

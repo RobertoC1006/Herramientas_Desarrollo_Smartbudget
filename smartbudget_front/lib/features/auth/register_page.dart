@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/app_toast.dart';
 import '../dashboard/main_layout.dart';
 import 'auth_controller.dart';
 import 'login_page.dart';
@@ -47,27 +48,30 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    await ref.read(authControllerProvider.notifier).register(
-          nombre: nombre,
-          email: email,
-          password: password,
-        );
+    await ref
+        .read(authControllerProvider.notifier)
+        .register(nombre: nombre, email: email, password: password);
 
     final authState = ref.read(authControllerProvider);
 
     authState.whenOrNull(
       data: (user) {
         if (user != null && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Cuenta creada con éxito. ¡Bienvenido, ${user.nombre}!')),
+          showAppToast(
+            context,
+            message: 'Cuenta creada con éxito. ¡Bienvenido, ${user.nombre}!',
+            icon: Icons.check_circle_outline_rounded,
           );
           context.go(MainLayout.routePath);
         }
       },
       error: (error, _) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString())),
+        showAppToast(
+          context,
+          message: error.toString(),
+          icon: Icons.error_outline_rounded,
+          accentColor: AppColors.danger,
         );
       },
     );
@@ -151,7 +155,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           ),
                           const SizedBox(height: 20),
                           const Text(
-                            'Correo electrónico',
+                            'Correo electrÃ³nico',
                             style: AppTextStyles.label,
                           ),
                           const SizedBox(height: 12),
@@ -164,18 +168,20 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               if (email.isEmpty) {
                                 return 'Ingresa tu correo.';
                               }
-                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-                                return 'Ingresa un correo electrónico válido.';
+                              if (!RegExp(
+                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                              ).hasMatch(email)) {
+                                return 'Ingresa un correo electrÃ³nico vÃ¡lido.';
                               }
                               return null;
                             },
                           ),
                           const SizedBox(height: 20),
-                          const Text('Contraseña', style: AppTextStyles.label),
+                          const Text('ContraseÃ±a', style: AppTextStyles.label),
                           const SizedBox(height: 12),
                           _PlainTextField(
                             controller: _passwordController,
-                            hintText: '••••••••',
+                            hintText: 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
                             obscureText: _obscurePassword,
                             suffixIcon: IconButton(
                               onPressed: () {
@@ -193,25 +199,29 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             validator: (value) {
                               final password = value?.trim() ?? '';
                               if (password.isEmpty) {
-                                return 'Ingresa tu contraseña.';
+                                return 'Ingresa tu contraseÃ±a.';
                               }
                               if (password.length < 6) {
-                                return 'La contraseña debe tener al menos 6 caracteres.';
+                                return 'La contraseÃ±a debe tener al menos 6 caracteres.';
                               }
                               return null;
                             },
                           ),
                           const SizedBox(height: 20),
-                          const Text('Confirmar contraseña', style: AppTextStyles.label),
+                          const Text(
+                            'Confirmar contraseÃ±a',
+                            style: AppTextStyles.label,
+                          ),
                           const SizedBox(height: 12),
                           _PlainTextField(
                             controller: _confirmPasswordController,
-                            hintText: '••••••••',
+                            hintText: 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
                             obscureText: _obscureConfirmPassword,
                             suffixIcon: IconButton(
                               onPressed: () {
                                 setState(() {
-                                  _obscureConfirmPassword = !_obscureConfirmPassword;
+                                  _obscureConfirmPassword =
+                                      !_obscureConfirmPassword;
                                 });
                               },
                               icon: Icon(
@@ -224,10 +234,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             validator: (value) {
                               final confirm = value?.trim() ?? '';
                               if (confirm.isEmpty) {
-                                return 'Confirma tu contraseña.';
+                                return 'Confirma tu contraseÃ±a.';
                               }
                               if (confirm != _passwordController.text.trim()) {
-                                return 'Las contraseñas no coinciden.';
+                                return 'Las contraseÃ±as no coinciden.';
                               }
                               return null;
                             },
@@ -252,11 +262,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           const SizedBox(height: 24),
                           Text.rich(
                             TextSpan(
-                              text: '¿Ya tienes una cuenta? ',
+                              text: 'Â¿Ya tienes una cuenta? ',
                               style: AppTextStyles.small,
                               children: [
                                 TextSpan(
-                                  text: 'Inicia sesión',
+                                  text: 'Inicia sesiÃ³n',
                                   style: const TextStyle(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w800,
