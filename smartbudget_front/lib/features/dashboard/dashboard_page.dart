@@ -113,17 +113,10 @@ class DashboardPage extends ConsumerWidget {
                   const SizedBox(height: 24),
                   _buildIncomeExpenseRow(totalIncome, totalExpenses),
                   const SizedBox(height: 30),
-<<<<<<< HEAD
                   const Text(
                     'Presupuesto Mensual',
                     style: AppTextStyles.heading3,
                   ),
-=======
-                  _buildAlertsSection(context, ref, alertsState),
-                  _buildSmartScoreSection(context, ref, smartScoreState),
-                  const SizedBox(height: 30),
-                  const Text('Presupuesto Mensual', style: AppTextStyles.heading3),
->>>>>>> c858aeb15c9442adabeb917c9f4ce5dc16974365
                   const SizedBox(height: 16),
                   _buildBudgetProgress(budget, totalExpenses),
                   const SizedBox(height: 30),
