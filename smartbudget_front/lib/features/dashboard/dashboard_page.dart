@@ -17,11 +17,16 @@ import '../expenses/add_expense_page.dart' show TransactionTile;
 
 class DashboardPage extends ConsumerStatefulWidget {
   final VoidCallback? onOpenSettings;
+  final VoidCallback? onViewAllTransactions;
 
   @override
   ConsumerState<DashboardPage> createState() => _DashboardPageState();
 
-  const DashboardPage({super.key, this.onOpenSettings});
+  const DashboardPage({
+    super.key,
+    this.onOpenSettings,
+    this.onViewAllTransactions,
+  });
 }
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
@@ -158,7 +163,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     _SectionHeader(
                       title: 'Actividad reciente',
                       actionLabel: 'Ver todo',
-                      onAction: () {},
+                      onAction: widget.onViewAllTransactions,
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     _buildRecentTransactions(transactions),

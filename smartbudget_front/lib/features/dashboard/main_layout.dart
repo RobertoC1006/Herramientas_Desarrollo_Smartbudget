@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_toast.dart';
@@ -19,10 +19,18 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _currentIndex = 0;
+  int _analysisHistoryFocusRequest = 0;
 
   void _openProfileSettings() {
     setState(() {
       _currentIndex = 4;
+    });
+  }
+
+  void _openAnalysisHistory() {
+    setState(() {
+      _analysisHistoryFocusRequest++;
+      _currentIndex = 3;
     });
   }
 
@@ -32,10 +40,13 @@ class _MainLayoutState extends State<MainLayout> {
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          DashboardPage(onOpenSettings: _openProfileSettings),
+          DashboardPage(
+            onOpenSettings: _openProfileSettings,
+            onViewAllTransactions: _openAnalysisHistory,
+          ),
           const AddExpensePage(),
           const GoalsPage(),
-          const AnalysisPage(),
+          AnalysisPage(historyFocusRequest: _analysisHistoryFocusRequest),
           const ProfilePage(),
         ],
       ),
@@ -113,4 +124,3 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 }
-

@@ -12,15 +12,19 @@ import '../../data/models/smart_core_snapshot.dart';
 import '../expenses/add_expense_page.dart' show TransactionTile;
 
 class AnalysisPage extends ConsumerStatefulWidget {
-  const AnalysisPage({super.key});
+  final int historyFocusRequest;
+
+  const AnalysisPage({super.key, this.historyFocusRequest = 0});
 
   @override
   ConsumerState<AnalysisPage> createState() => _AnalysisPageState();
 }
 
 class _AnalysisPageState extends ConsumerState<AnalysisPage> {
+  final GlobalKey _historySectionKey = GlobalKey();
   String? _selectedCategoryToReduce;
   double _reductionPercentage = 25.0;
+  late int _lastHistoryFocusRequest;
 
   final List<Color> _chartColors = [
     AppColors.primary,
@@ -30,6 +34,35 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
     const Color(0xFF9C27B0), // Purple
     const Color(0xFFFF9800), // Orange
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _lastHistoryFocusRequest = widget.historyFocusRequest;
+  }
+
+  @override
+  void didUpdateWidget(covariant AnalysisPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.historyFocusRequest != _lastHistoryFocusRequest) {
+      _lastHistoryFocusRequest = widget.historyFocusRequest;
+      _scrollToHistorySection();
+    }
+  }
+
+  void _scrollToHistorySection() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final historyContext = _historySectionKey.currentContext;
+      if (historyContext == null) return;
+
+      Scrollable.ensureVisible(
+        historyContext,
+        duration: const Duration(milliseconds: 520),
+        curve: Curves.easeOutCubic,
+        alignment: 0.05,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +136,13 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
                   _buildScoreHistoryCard(context, ref, historyState),
                   const SizedBox(height: 30),
 
-                  Text('Historial de Gastos', style: AppTextStyles.heading3),
+                  KeyedSubtree(
+                    key: _historySectionKey,
+                    child: Text(
+                      'Historial de Gastos',
+                      style: AppTextStyles.heading3,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   _buildHistoryList(expenses),
                   const SizedBox(height: 80),
