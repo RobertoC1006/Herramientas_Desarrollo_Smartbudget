@@ -1,4 +1,4 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+﻿import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class TokenStorage {
   static const String _tokenKey = 'jwt_token';
@@ -21,3 +21,4 @@ class TokenStorage {
     await _storage.delete(key: _tokenKey);
   }
 }
+

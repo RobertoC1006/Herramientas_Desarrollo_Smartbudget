@@ -1,26 +1,31 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class AppColors {
   const AppColors._();
 
-  static const Color primary = Color(0xFF18C28A);
-  static const Color primaryDark = Color(0xFF0FA875);
-  static const Color primaryLight = Color(0xFFE2F8EF);
+  static const Color primary = Color(0xFF10B981);
+  static const Color primaryDark = Color(0xFF047857);
+  static const Color primaryLight = Color(0xFFD1FAE5);
 
-  static const Color background = Color(0xFFF3FAF6);
+  static const Color background = Color(0xFFF5FBF7);
+  static const Color backgroundSoft = Color(0xFFEEF8F2);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceSoft = Color(0xFFF7FCFA);
+  static const Color surfaceSoft = Color(0xFFFAFFFC);
 
-  static const Color textPrimary = Color(0xFF061B13);
-  static const Color textSecondary = Color(0xFF657284);
-  static const Color textMuted = Color(0xFF8A94A6);
+  static const Color textPrimary = Color(0xFF0F241C);
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color textMuted = Color(0xFF94A3B8);
 
-  static const Color border = Color(0xFFBDEEDC);
-  static const Color divider = Color(0xFFE0F3EC);
+  static const Color border = Color(0xFFE2EDE7);
+  static const Color divider = Color(0xFFE6F0EA);
 
-  static const Color shadow = Color(0x1A000000);
+  static const Color shadow = Color(0x140F241C);
 
-  static const Color danger = Color(0xFFE5484D);
-  static const Color warning = Color(0xFFFFB020);
+  static const Color danger = Color(0xFFEF4444);
+  static const Color dangerSoft = Color(0xFFFEE2E2);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color warningSoft = Color(0xFFFEF3C7);
   static const Color info = Color(0xFF3B82F6);
+  static const Color infoSoft = Color(0xFFEFF6FF);
 }
+

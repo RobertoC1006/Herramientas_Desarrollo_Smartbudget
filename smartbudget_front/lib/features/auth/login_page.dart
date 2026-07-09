@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/adaptive_colors.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_toast.dart';
@@ -90,7 +91,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final isLoading = authState.isLoading;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.financeBackground,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -136,7 +137,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   Container(
                     padding: const EdgeInsets.fromLTRB(27, 27, 27, 30),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: context.financeSurface,
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: const [
                         BoxShadow(
@@ -189,7 +190,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 _obscurePassword
                                     ? Icons.visibility_off_outlined
                                     : Icons.visibility_outlined,
-                                color: AppColors.textSecondary,
+                                color: context.financeTextSecondary,
                               ),
                             ),
                             validator: (value) {
@@ -330,7 +331,7 @@ class _PlainTextField extends StatelessWidget {
       keyboardType: keyboardType,
       obscureText: obscureText,
       validator: validator,
-      style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
+      style: TextStyle(fontSize: 16, color: context.financeText),
       decoration: InputDecoration(
         hintText: hintText,
         suffixIcon: suffixIcon,
@@ -362,8 +363,8 @@ class _SocialButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: () {},
         style: OutlinedButton.styleFrom(
-          backgroundColor: AppColors.surfaceSoft,
-          foregroundColor: AppColors.textPrimary,
+          backgroundColor: context.financeSurfaceSoft,
+          foregroundColor: context.financeText,
           side: const BorderSide(color: AppColors.border),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
@@ -374,10 +375,10 @@ class _SocialButton extends StatelessWidget {
           children: [
             Text(
               iconText,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 21,
                 fontWeight: FontWeight.w900,
-                color: AppColors.textPrimary,
+                color: context.financeText,
               ),
             ),
             const SizedBox(width: 18),
@@ -386,10 +387,10 @@ class _SocialButton extends StatelessWidget {
                 label,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: context.financeText,
                 ),
               ),
             ),
@@ -399,3 +400,4 @@ class _SocialButton extends StatelessWidget {
     );
   }
 }
+

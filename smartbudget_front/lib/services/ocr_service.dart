@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import '../core/api_client.dart';
@@ -54,14 +54,18 @@ class OcrService {
       );
 
       final data = response.data as Map<String, dynamic>;
-      
+
       // Parsear la respuesta estructurada de la IA del backend
-      final monto = data['monto'] != null ? (data['monto'] as num).toDouble() : null;
+      final monto = data['monto'] != null
+          ? (data['monto'] as num).toDouble()
+          : null;
       final comercio = data['comercio'] as String?;
       final categoria = data['categoria'] as String?;
       final descripcion = data['descripcion'] as String?;
-      final confianza = data['confianza'] != null ? (data['confianza'] as num).toDouble() : 0.0;
-      
+      final confianza = data['confianza'] != null
+          ? (data['confianza'] as num).toDouble()
+          : 0.0;
+
       DateTime? fecha;
       if (data['fecha'] != null) {
         try {
@@ -74,7 +78,9 @@ class OcrService {
         amount: monto,
         date: fecha,
         rawText: response.toString(),
-        category: categoria != null ? _mapBackendCategoryToFrontend(categoria) : null,
+        category: categoria != null
+            ? _mapBackendCategoryToFrontend(categoria)
+            : null,
         description: descripcion,
         confidence: confianza,
       );
@@ -116,3 +122,4 @@ class OcrService {
     // Método vacío mantenido para compatibilidad con add_expense_page.dart
   }
 }
+

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers/budget_provider.dart';
+import '../../core/theme/adaptive_colors.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_toast.dart';
@@ -69,6 +70,187 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     ref.read(budgetProvider.notifier).createBudget(newBudget);
     _showTopToast('Presupuesto actualizado');
+  }
+
+  Future<void> _showExtraBudgetSheet() {
+    final amountController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    return showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        var isSubmitting = false;
+
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            Future<void> submit() async {
+              if (!formKey.currentState!.validate()) return;
+
+              setSheetState(() => isSubmitting = true);
+
+              final amount = double.parse(amountController.text.trim());
+              final description = descriptionController.text.trim();
+
+              await ref
+                  .read(budgetProvider.notifier)
+                  .addAdditionalIncome(amount, description);
+
+              if (!context.mounted) return;
+              Navigator.of(context).pop();
+              _showTopToast(
+                'Presupuesto extra agregado',
+                icon: Icons.add_card_rounded,
+              );
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: _SettingsSheet(
+                title: 'Presupuesto extra',
+                icon: Icons.add_card_rounded,
+                children: [
+                  Form(
+                    key: formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Agrega un ingreso adicional a tu presupuesto disponible del mes.',
+                          style: AppTextStyles.body.copyWith(
+                            color: context.financeTextSecondary,
+                            height: 1.35,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        const Text(
+                          'Monto extra (S/)',
+                          style: AppTextStyles.label,
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: amountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: _settingsInputDecoration(
+                            hintText: 'Ej: 250',
+                            prefixText: 'S/  ',
+                          ),
+                          validator: (value) {
+                            final amount = double.tryParse(value ?? '');
+                            if (amount == null || amount <= 0) {
+                              return 'Ingresa un monto mayor a 0';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        const Text('Descripción', style: AppTextStyles.label),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: descriptionController,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: _settingsInputDecoration(
+                            hintText: 'Ej: Bono, venta o ingreso adicional',
+                          ),
+                          validator: (value) {
+                            if ((value ?? '').trim().isEmpty) {
+                              return 'Describe el ingreso extra';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 22),
+                        SizedBox(
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: isSubmitting ? null : submit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              disabledBackgroundColor: AppColors.primaryLight,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            icon: isSubmitting
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.add_rounded,
+                                    color: Colors.white,
+                                  ),
+                            label: const Text(
+                              'Agregar extra',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      amountController.dispose();
+      descriptionController.dispose();
+    });
+  }
+
+  InputDecoration _settingsInputDecoration({
+    required String hintText,
+    String? prefixText,
+  }) {
+    return InputDecoration(
+      filled: true,
+      fillColor: context.financeInputFill,
+      hintText: hintText,
+      prefixText: prefixText,
+      prefixStyle: const TextStyle(
+        color: AppColors.primary,
+        fontWeight: FontWeight.w700,
+      ),
+      hintStyle: AppTextStyles.body.copyWith(color: context.financeTextMuted),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.danger),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.danger, width: 2),
+      ),
+    );
   }
 
   void _showNotificationsSettings() {
@@ -210,6 +392,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 _saveBudget();
               },
             ),
+            _SettingsActionTile(
+              icon: Icons.add_card_rounded,
+              title: 'Presupuesto extra',
+              subtitle: 'Suma un ingreso adicional al saldo disponible',
+              onTap: () {
+                Navigator.of(context).pop();
+                _showExtraBudgetSheet();
+              },
+            ),
           ],
         );
       },
@@ -272,7 +463,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             constraints: const BoxConstraints(maxWidth: 420),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.financeSurface,
               borderRadius: BorderRadius.circular(28),
               boxShadow: const [
                 BoxShadow(
@@ -305,7 +496,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 Text(
                   message,
                   style: AppTextStyles.body.copyWith(
-                    color: AppColors.textSecondary,
+                    color: context.financeTextSecondary,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -352,7 +543,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.financeBackground,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -409,7 +600,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.financeSurface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
@@ -450,7 +641,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               Text(
                 email,
                 style: AppTextStyles.small.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.financeTextSecondary,
                   fontSize: 14,
                 ),
               ),
@@ -465,7 +656,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.financeSurface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
@@ -499,7 +690,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           Text(
             'Ingresa el dinero total que tienes disponible este mes',
             style: AppTextStyles.small.copyWith(
-              color: AppColors.textSecondary,
+              color: context.financeTextSecondary,
               fontSize: 14,
               height: 1.4,
             ),
@@ -565,7 +756,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 Text(
                   'Presupuesto configurado: ',
                   style: AppTextStyles.small.copyWith(
-                    color: AppColors.textPrimary,
+                    color: context.financeText,
                     fontSize: 13,
                   ),
                 ),
@@ -600,7 +791,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.financeSurface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
@@ -636,6 +827,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           _buildSettingsTile(
             icon: Icons.settings_outlined,
             label: 'Configuración',
+          ),
+          const SizedBox(height: 24),
+          _buildSettingsTile(
+            icon: Icons.add_card_rounded,
+            label: 'Presupuesto extra',
+            onTap: _showExtraBudgetSheet,
           ),
           const SizedBox(height: 24),
           _buildSettingsTile(
@@ -676,9 +873,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ),
             ),
           ),
-          const Icon(
+          Icon(
             Icons.chevron_right_rounded,
-            color: AppColors.textMuted,
+            color: context.financeTextMuted,
             size: 22,
           ),
         ],
@@ -690,6 +887,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     if (icon == Icons.notifications_none) return _showNotificationsSettings;
     if (icon == Icons.shield_outlined) return _showPrivacySettings;
     if (icon == Icons.settings_outlined) return _showGeneralSettings;
+    if (icon == Icons.add_card_rounded) return _showExtraBudgetSheet;
     if (icon == Icons.help_outline) return _showHelpSettings;
     return () {};
   }
@@ -713,7 +911,7 @@ class _SettingsSheet extends StatelessWidget {
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.financeSurface,
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
@@ -747,7 +945,7 @@ class _SettingsSheet extends StatelessWidget {
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.close_rounded),
-                  color: AppColors.textSecondary,
+                  color: context.financeTextSecondary,
                 ),
               ],
             ),
@@ -790,7 +988,7 @@ class _SettingsSwitchTile extends StatelessWidget {
                   style: AppTextStyles.label.copyWith(
                     color: enabled
                         ? AppColors.textPrimary
-                        : AppColors.textMuted,
+                        : context.financeTextMuted,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -799,7 +997,7 @@ class _SettingsSwitchTile extends StatelessWidget {
                   style: AppTextStyles.small.copyWith(
                     color: enabled
                         ? AppColors.textSecondary
-                        : AppColors.textMuted,
+                        : context.financeTextMuted,
                   ),
                 ),
               ],
@@ -859,15 +1057,15 @@ class _SettingsActionTile extends StatelessWidget {
                   Text(
                     subtitle,
                     style: AppTextStyles.small.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.financeTextSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: AppColors.textMuted,
+              color: context.financeTextMuted,
               size: 20,
             ),
           ],

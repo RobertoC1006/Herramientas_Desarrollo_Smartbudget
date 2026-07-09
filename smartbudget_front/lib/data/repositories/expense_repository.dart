@@ -7,16 +7,17 @@ class ExpenseRepository {
   final ApiClient apiClient;
 
   ExpenseRepository({ApiClient? apiClient})
-      : apiClient = apiClient ?? ApiClient();
+    : apiClient = apiClient ?? ApiClient();
 
-  Future<List<TransactionItem>> fetchExpenses({
-    int? mes,
-    int? anio,
-  }) async {
+  Future<List<TransactionItem>> fetchExpenses({int? mes, int? anio}) async {
     try {
       final queryParameters = <String, dynamic>{};
-      if (mes != null) queryParameters['mes'] = mes;
-      if (anio != null) queryParameters['año'] = anio; // El backend espera 'año'
+      if (mes != null) {
+        queryParameters['mes'] = mes;
+      }
+      if (anio != null) {
+        queryParameters['año'] = anio; // El backend espera 'año'
+      }
 
       final response = await apiClient.dio.get(
         '/api/expenses/',
@@ -25,7 +26,10 @@ class ExpenseRepository {
 
       final list = response.data as List<dynamic>;
       return list
-          .map((json) => TransactionItem.fromExpenseJson(json as Map<String, dynamic>))
+          .map(
+            (json) =>
+                TransactionItem.fromExpenseJson(json as Map<String, dynamic>),
+          )
           .toList();
     } on DioException catch (e) {
       throw Exception(_handleDioError(e));
@@ -42,8 +46,9 @@ class ExpenseRepository {
   }) async {
     try {
       // Formatear la fecha como YYYY-MM-DD
-      final fechaStr = "${fecha.year}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}";
-      
+      final fechaStr =
+          "${fecha.year}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}";
+
       final response = await apiClient.dio.post(
         '/api/expenses/',
         data: {
@@ -56,7 +61,9 @@ class ExpenseRepository {
         },
       );
 
-      return TransactionItem.fromExpenseJson(response.data as Map<String, dynamic>);
+      return TransactionItem.fromExpenseJson(
+        response.data as Map<String, dynamic>,
+      );
     } on DioException catch (e) {
       throw Exception(_handleDioError(e));
     }

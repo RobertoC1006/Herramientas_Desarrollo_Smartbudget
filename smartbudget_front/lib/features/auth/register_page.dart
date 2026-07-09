@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/adaptive_colors.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_toast.dart';
@@ -83,7 +84,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final isLoading = authState.isLoading;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.financeBackground,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -122,7 +123,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   Container(
                     padding: const EdgeInsets.fromLTRB(27, 27, 27, 30),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: context.financeSurface,
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: const [
                         BoxShadow(
@@ -155,7 +156,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           ),
                           const SizedBox(height: 20),
                           const Text(
-                            'Correo electrÃ³nico',
+                            'Correo electrónico',
                             style: AppTextStyles.label,
                           ),
                           const SizedBox(height: 12),
@@ -171,17 +172,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               if (!RegExp(
                                 r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                               ).hasMatch(email)) {
-                                return 'Ingresa un correo electrÃ³nico vÃ¡lido.';
+                                return 'Ingresa un correo electrónico válido.';
                               }
                               return null;
                             },
                           ),
                           const SizedBox(height: 20),
-                          const Text('ContraseÃ±a', style: AppTextStyles.label),
+                          const Text('Contraseña', style: AppTextStyles.label),
                           const SizedBox(height: 12),
                           _PlainTextField(
                             controller: _passwordController,
-                            hintText: 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
+                            hintText: '••••••••',
                             obscureText: _obscurePassword,
                             suffixIcon: IconButton(
                               onPressed: () {
@@ -193,29 +194,29 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                 _obscurePassword
                                     ? Icons.visibility_off_outlined
                                     : Icons.visibility_outlined,
-                                color: AppColors.textSecondary,
+                                color: context.financeTextSecondary,
                               ),
                             ),
                             validator: (value) {
                               final password = value?.trim() ?? '';
                               if (password.isEmpty) {
-                                return 'Ingresa tu contraseÃ±a.';
+                                return 'Ingresa tu contraseña.';
                               }
                               if (password.length < 6) {
-                                return 'La contraseÃ±a debe tener al menos 6 caracteres.';
+                                return 'La contraseña debe tener al menos 6 caracteres.';
                               }
                               return null;
                             },
                           ),
                           const SizedBox(height: 20),
                           const Text(
-                            'Confirmar contraseÃ±a',
+                            'Confirmar contraseña',
                             style: AppTextStyles.label,
                           ),
                           const SizedBox(height: 12),
                           _PlainTextField(
                             controller: _confirmPasswordController,
-                            hintText: 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
+                            hintText: '••••••••',
                             obscureText: _obscureConfirmPassword,
                             suffixIcon: IconButton(
                               onPressed: () {
@@ -228,16 +229,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                 _obscureConfirmPassword
                                     ? Icons.visibility_off_outlined
                                     : Icons.visibility_outlined,
-                                color: AppColors.textSecondary,
+                                color: context.financeTextSecondary,
                               ),
                             ),
                             validator: (value) {
                               final confirm = value?.trim() ?? '';
                               if (confirm.isEmpty) {
-                                return 'Confirma tu contraseÃ±a.';
+                                return 'Confirma tu contraseña.';
                               }
                               if (confirm != _passwordController.text.trim()) {
-                                return 'Las contraseÃ±as no coinciden.';
+                                return 'Las contraseñas no coinciden.';
                               }
                               return null;
                             },
@@ -262,11 +263,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           const SizedBox(height: 24),
                           Text.rich(
                             TextSpan(
-                              text: 'Â¿Ya tienes una cuenta? ',
+                              text: '¿Ya tienes una cuenta? ',
                               style: AppTextStyles.small,
                               children: [
                                 TextSpan(
-                                  text: 'Inicia sesiÃ³n',
+                                  text: 'Inicia sesión',
                                   style: const TextStyle(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w800,
@@ -320,7 +321,7 @@ class _PlainTextField extends StatelessWidget {
       keyboardType: keyboardType,
       obscureText: obscureText,
       validator: validator,
-      style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
+      style: TextStyle(fontSize: 16, color: context.financeText),
       decoration: InputDecoration(
         hintText: hintText,
         suffixIcon: suffixIcon,
@@ -338,3 +339,4 @@ class _PlainTextField extends StatelessWidget {
     );
   }
 }
+

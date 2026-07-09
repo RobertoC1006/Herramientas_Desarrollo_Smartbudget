@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class CategoryInfo {
   final String name;
@@ -73,3 +73,4 @@ class CategoryUtils {
     );
   }
 }
+

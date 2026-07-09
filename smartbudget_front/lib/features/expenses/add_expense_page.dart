@@ -6,11 +6,14 @@ import 'package:file_picker/file_picker.dart';
 
 import '../../core/providers/budget_provider.dart';
 import '../../core/providers/transactions_provider.dart';
+import '../../core/theme/adaptive_colors.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/category_utils.dart';
+import '../../core/widgets/app_confirm_dialog.dart';
 import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/budget_overflow_dialog.dart';
+import '../../core/widgets/category_icon.dart';
 import '../../data/models/transaction.dart';
 import '../../services/ocr_service.dart';
 import 'ocr_confirmation_page.dart';
@@ -165,7 +168,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.financeSurface,
         borderRadius: BorderRadius.circular(28),
         boxShadow: const [
           BoxShadow(
@@ -208,7 +211,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
                       Text(
                         'Escanea una boleta o factura para registrar automáticamente tus gastos',
                         style: TextStyle(
-                          color: AppColors.textPrimary.withValues(alpha: 0.8),
+                          color: context.financeText.withValues(alpha: 0.8),
                           fontSize: 13,
                         ),
                       ),
@@ -263,7 +266,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.financeBackground,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -284,7 +287,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
                         Text(
                           'Elige una opción para registrar tu gasto',
                           style: AppTextStyles.body.copyWith(
-                            color: AppColors.textSecondary,
+                            color: context.financeTextSecondary,
                           ),
                         ),
                       ],
@@ -297,7 +300,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
                   // Card form
                   Container(
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: context.financeSurface,
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: const [
                         BoxShadow(
@@ -456,22 +459,14 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
         Icons.keyboard_arrow_down_rounded,
         color: AppColors.primary,
       ),
-      dropdownColor: AppColors.surface,
+      dropdownColor: context.financeSurface,
       borderRadius: BorderRadius.circular(16),
       items: CategoryUtils.categories.map((info) {
         return DropdownMenuItem<String>(
           value: info.name,
           child: Row(
             children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: info.background,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(info.icon, color: info.color, size: 16),
-              ),
+              CategoryIcon(info: info, size: 32),
               const SizedBox(width: 12),
               Text(info.name, style: AppTextStyles.body),
             ],
@@ -481,15 +476,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
       selectedItemBuilder: (context) => CategoryUtils.categories.map((info) {
         return Row(
           children: [
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: info.background,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(info.icon, color: info.color, size: 14),
-            ),
+            CategoryIcon(info: info, size: 28),
             const SizedBox(width: 10),
             Text(info.name, style: AppTextStyles.body),
           ],
@@ -505,10 +492,10 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
     return TextFormField(
       controller: _amountController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
+        color: context.financeText,
       ),
       decoration: _inputDecoration().copyWith(
         hintText: '50.00',
@@ -544,8 +531,8 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
   InputDecoration _inputDecoration() {
     return InputDecoration(
       filled: true,
-      fillColor: AppColors.background,
-      hintStyle: AppTextStyles.body.copyWith(color: AppColors.textMuted),
+      fillColor: context.financeInputFill,
+      hintStyle: AppTextStyles.body.copyWith(color: context.financeTextMuted),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -592,7 +579,7 @@ class _ScanOptionButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: AppColors.background,
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.financeBorder),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -601,10 +588,10 @@ class _ScanOptionButton extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.financeText,
               ),
             ),
           ],
@@ -623,10 +610,10 @@ class _FormLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w600,
-        color: AppColors.textSecondary,
+        color: context.financeTextSecondary,
         letterSpacing: 0.3,
       ),
     );
@@ -653,30 +640,22 @@ class TransactionTile extends ConsumerWidget {
         '${transaction.date.day} ${_monthAbbr(transaction.date.month)}';
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
+      decoration: BoxDecoration(
+        color: context.financeSurface,
+        border: Border(bottom: BorderSide(color: AppColors.divider)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 10,
         ),
-        leading: Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: info.background,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(info.icon, color: info.color, size: 22),
-        ),
+        leading: CategoryIcon(info: info, size: 46, iconSize: 22),
         title: Text(
           transaction.title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.financeText,
           ),
         ),
         subtitle: Padding(
@@ -685,25 +664,25 @@ class TransactionTile extends ConsumerWidget {
             children: [
               Text(
                 transaction.category,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: context.financeTextSecondary,
                 ),
               ),
               const _Dot(),
               Text(
                 dateStr,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: context.financeTextSecondary,
                 ),
               ),
               const _Dot(),
               Text(
                 time,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: context.financeTextSecondary,
                 ),
               ),
             ],
@@ -712,26 +691,59 @@ class TransactionTile extends ConsumerWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '-S/ ${transaction.amount.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFE5484D),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: AppColors.dangerSoft,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '-S/ ${transaction.amount.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.danger,
+                ),
               ),
             ),
             if (showDelete) ...[
               const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  ref
-                      .read(transactionsProvider.notifier)
-                      .removeTransaction(transaction.id);
-                },
-                child: const Icon(
-                  Icons.delete_outline_rounded,
-                  color: Color(0xFFB0B8C1),
-                  size: 20,
+              SizedBox(
+                width: 36,
+                height: 36,
+                child: IconButton(
+                  tooltip: 'Eliminar gasto',
+                  padding: EdgeInsets.zero,
+                  onPressed: () async {
+                    final confirmed = await showAppConfirmDialog(
+                      context: context,
+                      title: 'Eliminar gasto',
+                      message:
+                          '¿Seguro que deseas eliminar "${transaction.title}"? El monto se devolverá a tu presupuesto disponible.',
+                      confirmLabel: 'Eliminar',
+                      icon: Icons.delete_outline_rounded,
+                      accentColor: AppColors.danger,
+                    );
+
+                    if (!confirmed || !context.mounted) return;
+
+                    await ref
+                        .read(transactionsProvider.notifier)
+                        .removeTransaction(transaction.id);
+
+                    if (!context.mounted) return;
+                    showAppToast(
+                      context,
+                      message: 'Gasto eliminado',
+                      icon: Icons.delete_outline_rounded,
+                      accentColor: AppColors.danger,
+                    );
+                  },
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: context.financeTextMuted,
+                    size: 19,
+                  ),
                 ),
               ),
             ],
@@ -765,11 +777,11 @@ class _Dot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 5),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
       child: Text(
         '•',
-        style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+        style: TextStyle(color: context.financeTextMuted, fontSize: 11),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/goals_provider.dart';
+import '../../core/theme/adaptive_colors.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_toast.dart';
@@ -85,7 +86,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
             constraints: const BoxConstraints(maxWidth: 420),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.financeSurface,
               borderRadius: BorderRadius.circular(28),
               boxShadow: const [
                 BoxShadow(
@@ -142,7 +143,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                         child: TextButton(
                           onPressed: () => Navigator.pop(context),
                           style: TextButton.styleFrom(
-                            foregroundColor: AppColors.textSecondary,
+                            foregroundColor: context.financeTextSecondary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -211,7 +212,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final goalsState = ref.watch(goalsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.financeBackground,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -228,7 +229,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                       Text(
                         'Ahorra para tus sueños',
                         style: AppTextStyles.body.copyWith(
-                          color: AppColors.textSecondary,
+                          color: context.financeTextSecondary,
                         ),
                       ),
                     ],
@@ -324,7 +325,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
           Text(
             'Crea tu primera meta de ahorro y comienza a\nplanificar tu futuro',
             textAlign: TextAlign.center,
-            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.body.copyWith(
+              color: context.financeTextSecondary,
+            ),
           ),
         ],
       ),
@@ -335,7 +338,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final icon = _getGoalIcon(goal.nombre);
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.financeSurface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
@@ -530,7 +533,7 @@ class _AddGoalDialogState extends State<_AddGoalDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.financeSurface,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 450),
         child: SingleChildScrollView(
@@ -556,9 +559,9 @@ class _AddGoalDialogState extends State<_AddGoalDialog> {
                       ],
                     ),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close,
-                        color: AppColors.textSecondary,
+                        color: context.financeTextSecondary,
                       ),
                       onPressed: () => Navigator.pop(context),
                     ),

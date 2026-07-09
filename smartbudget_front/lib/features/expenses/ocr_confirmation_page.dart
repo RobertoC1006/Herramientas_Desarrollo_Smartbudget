@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/budget_provider.dart';
 import '../../core/providers/transactions_provider.dart';
+import '../../core/theme/adaptive_colors.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/category_utils.dart';
 import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/budget_overflow_dialog.dart';
+import '../../core/widgets/category_icon.dart';
 import '../../services/ocr_service.dart';
 
 class OcrConfirmationPage extends ConsumerStatefulWidget {
@@ -170,21 +172,18 @@ class _OcrConfirmationPageState extends ConsumerState<OcrConfirmationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.financeBackground,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.financeBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-            color: AppColors.textPrimary,
-          ),
+          icon: Icon(Icons.arrow_back_rounded, color: context.financeText),
           onPressed: () => Navigator.of(context).pop(false),
         ),
-        title: const Text(
+        title: Text(
           'Confirmar Gasto OCR',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: context.financeText,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -215,11 +214,11 @@ class _OcrConfirmationPageState extends ConsumerState<OcrConfirmationPage> {
                     size: 28,
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Revisa los datos extraídos del documento. Puedes editarlos si es necesario.',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: context.financeText,
                         fontSize: 14,
                       ),
                     ),
@@ -231,7 +230,7 @@ class _OcrConfirmationPageState extends ConsumerState<OcrConfirmationPage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.financeSurface,
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: const [
                   BoxShadow(
@@ -363,22 +362,14 @@ class _OcrConfirmationPageState extends ConsumerState<OcrConfirmationPage> {
         Icons.keyboard_arrow_down_rounded,
         color: AppColors.primary,
       ),
-      dropdownColor: AppColors.surface,
+      dropdownColor: context.financeSurface,
       borderRadius: BorderRadius.circular(16),
       items: CategoryUtils.categories.map((info) {
         return DropdownMenuItem<String>(
           value: info.name,
           child: Row(
             children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: info.background,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(info.icon, color: info.color, size: 14),
-              ),
+              CategoryIcon(info: info, size: 28),
               const SizedBox(width: 10),
               Text(info.name, style: AppTextStyles.body),
             ],
@@ -393,8 +384,8 @@ class _OcrConfirmationPageState extends ConsumerState<OcrConfirmationPage> {
   InputDecoration _inputDecoration() {
     return InputDecoration(
       filled: true,
-      fillColor: AppColors.background,
-      hintStyle: AppTextStyles.body.copyWith(color: AppColors.textMuted),
+      fillColor: context.financeInputFill,
+      hintStyle: AppTextStyles.body.copyWith(color: context.financeTextMuted),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -428,10 +419,10 @@ class _FormLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w600,
-        color: AppColors.textSecondary,
+        color: context.financeTextSecondary,
         letterSpacing: 0.3,
       ),
     );

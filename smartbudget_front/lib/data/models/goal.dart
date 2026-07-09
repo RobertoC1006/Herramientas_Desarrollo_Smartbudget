@@ -1,4 +1,4 @@
-import 'enums.dart';
+﻿import 'enums.dart';
 
 class Goal {
   final int id;
@@ -70,3 +70,4 @@ class Goal {
     };
   }
 }
+

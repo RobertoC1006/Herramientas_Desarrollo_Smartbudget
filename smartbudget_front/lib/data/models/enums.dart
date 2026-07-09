@@ -1,4 +1,4 @@
-enum CategoriaGasto {
+﻿enum CategoriaGasto {
   alimentacion,
   transporte,
   educacion,
@@ -106,3 +106,4 @@ TipoAlerta tipoAlertaFromJson(String value) {
       return TipoAlerta.informativa;
   }
 }
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_toast.dart';
@@ -20,21 +20,28 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    const DashboardPage(),
-    const AddExpensePage(),
-    const GoalsPage(),
-    const AnalysisPage(),
-    const ProfilePage(),
-  ];
+  void _openProfileSettings() {
+    setState(() {
+      _currentIndex = 4;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          DashboardPage(onOpenSettings: _openProfileSettings),
+          const AddExpensePage(),
+          const GoalsPage(),
+          const AnalysisPage(),
+          const ProfilePage(),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // AcciÃ³n de la varita mÃ¡gica (ej. IA)
+          // Accion de la varita magica (ej. IA)
           showAppToast(
             context,
             message: '¡Asistente IA muy pronto!',
@@ -45,13 +52,15 @@ class _MainLayoutState extends State<MainLayout> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
+        decoration: BoxDecoration(
+          color: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
           boxShadow: [
             BoxShadow(
-              color: AppColors.shadow,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black.withValues(alpha: 0.28)
+                  : AppColors.shadow,
               blurRadius: 20,
-              offset: Offset(0, -5),
+              offset: const Offset(0, -5),
             ),
           ],
         ),
@@ -88,7 +97,7 @@ class _MainLayoutState extends State<MainLayout> {
                   BottomNavigationBarItem(
                     icon: Icon(Icons.bar_chart_outlined),
                     activeIcon: Icon(Icons.bar_chart),
-                    label: 'AnÃ¡lisis',
+                    label: 'Análisis',
                   ),
                   BottomNavigationBarItem(
                     icon: Icon(Icons.person_outline),
@@ -104,3 +113,4 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 }
+

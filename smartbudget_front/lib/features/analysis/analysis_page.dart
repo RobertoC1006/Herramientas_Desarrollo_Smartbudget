@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 
 import '../../core/providers/transactions_provider.dart';
 import '../../core/providers/smartscore_provider.dart';
+import '../../core/theme/adaptive_colors.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../data/models/transaction.dart';
@@ -36,18 +37,21 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
     final historyState = ref.watch(smartScoreHistoryProvider);
 
     return transactionsState.when(
-      loading: () => const Scaffold(
-        backgroundColor: AppColors.background,
+      loading: () => Scaffold(
+        backgroundColor: context.financeBackground,
         body: Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
       ),
       error: (error, _) => Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.financeBackground,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text('Error al cargar datos del análisis: $error', textAlign: TextAlign.center),
+            child: Text(
+              'Error al cargar datos del análisis: $error',
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       ),
@@ -73,7 +77,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
         }
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: context.financeBackground,
           body: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -85,7 +89,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
                   Text(
                     'Visualiza y optimiza tus finanzas',
                     style: AppTextStyles.body.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.financeTextSecondary,
                     ),
                   ),
                   const SizedBox(height: 30),
@@ -120,7 +124,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.financeSurface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
@@ -190,7 +194,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
                   child: Text(
                     'No hay suficiente historial para calcular tu evolución',
                     style: AppTextStyles.body.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.financeTextSecondary,
                     ),
                   ),
                 );
@@ -205,7 +209,10 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
                 });
 
               final spots = sortedSnaps.asMap().entries.map((entry) {
-                return FlSpot(entry.key.toDouble(), entry.value.score.toDouble());
+                return FlSpot(
+                  entry.key.toDouble(),
+                  entry.value.score.toDouble(),
+                );
               }).toList();
 
               return Column(
@@ -239,15 +246,27 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
                                 showTitles: true,
                                 getTitlesWidget: (value, meta) {
                                   final index = value.toInt();
-                                  if (index < 0 || index >= sortedSnaps.length) {
+                                  if (index < 0 ||
+                                      index >= sortedSnaps.length) {
                                     return const SizedBox.shrink();
                                   }
                                   final snap = sortedSnaps[index];
                                   final monthNames = [
-                                    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-                                    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+                                    'Ene',
+                                    'Feb',
+                                    'Mar',
+                                    'Abr',
+                                    'May',
+                                    'Jun',
+                                    'Jul',
+                                    'Ago',
+                                    'Sep',
+                                    'Oct',
+                                    'Nov',
+                                    'Dic',
                                   ];
-                                  final mesStr = (snap.mes >= 1 && snap.mes <= 12)
+                                  final mesStr =
+                                      (snap.mes >= 1 && snap.mes <= 12)
                                       ? monthNames[snap.mes - 1]
                                       : snap.mes.toString();
                                   return SideTitleWidget(
@@ -255,7 +274,9 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
                                     space: 4,
                                     child: Text(
                                       mesStr,
-                                      style: AppTextStyles.xSmall.copyWith(fontSize: 10),
+                                      style: AppTextStyles.xSmall.copyWith(
+                                        fontSize: 10,
+                                      ),
                                     ),
                                   );
                                 },
@@ -266,12 +287,16 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
                               sideTitles: SideTitles(
                                 showTitles: true,
                                 getTitlesWidget: (value, meta) {
-                                  if (value % 20 != 0) return const SizedBox.shrink();
+                                  if (value % 20 != 0) {
+                                    return const SizedBox.shrink();
+                                  }
                                   return SideTitleWidget(
                                     meta: meta,
                                     child: Text(
                                       '${value.toInt()}',
-                                      style: AppTextStyles.xSmall.copyWith(fontSize: 10),
+                                      style: AppTextStyles.xSmall.copyWith(
+                                        fontSize: 10,
+                                      ),
                                     ),
                                   );
                                 },
@@ -279,9 +304,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
                               ),
                             ),
                           ),
-                          borderData: FlBorderData(
-                            show: false,
-                          ),
+                          borderData: FlBorderData(show: false),
                           minX: 0,
                           maxX: (sortedSnaps.length - 1).toDouble(),
                           minY: 0,
@@ -293,9 +316,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
                               color: AppColors.primary,
                               barWidth: 4,
                               isStrokeCapRound: true,
-                              dotData: const FlDotData(
-                                show: true,
-                              ),
+                              dotData: const FlDotData(show: true),
                               belowBarData: BarAreaData(
                                 show: true,
                                 color: AppColors.primary.withValues(alpha: 0.1),
@@ -327,7 +348,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.financeSurface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
@@ -380,7 +401,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
               child: Text(
                 'Agrega gastos para ver tu distribución',
                 style: AppTextStyles.body.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.financeTextSecondary,
                 ),
               ),
             )
@@ -460,7 +481,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.financeSurface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
@@ -579,7 +600,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
             decoration: BoxDecoration(
               color: AppColors.primaryLight.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.financeBorder),
             ),
             child: Row(
               children: [
@@ -617,27 +638,35 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
         padding: const EdgeInsets.symmetric(vertical: 28),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.financeSurface,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           'Aún no has registrado ningún gasto',
-          style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+          style: AppTextStyles.body.copyWith(
+            color: context.financeTextSecondary,
+          ),
         ),
       );
     }
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.financeSurface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
-          BoxShadow(color: AppColors.shadow, blurRadius: 15, offset: Offset(0, 5))
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 15,
+            offset: Offset(0, 5),
+          ),
         ],
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(
-        children: expenses.map((tx) => TransactionTile(transaction: tx)).toList(),
+        children: expenses
+            .map((tx) => TransactionTile(transaction: tx))
+            .toList(),
       ),
     );
   }

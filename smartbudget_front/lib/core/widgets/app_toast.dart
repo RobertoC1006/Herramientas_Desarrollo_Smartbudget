@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/adaptive_colors.dart';
 import '../theme/app_text_styles.dart';
 
 void showAppToast(
@@ -99,7 +100,7 @@ class _AppToastState extends State<_AppToast>
                       vertical: 14,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: context.financeSurface,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
                         color: widget.accentColor.withValues(alpha: 0.28),
@@ -133,7 +134,7 @@ class _AppToastState extends State<_AppToast>
                           child: Text(
                             widget.message,
                             style: AppTextStyles.label.copyWith(
-                              color: AppColors.textPrimary,
+                              color: context.financeText,
                               fontSize: 14,
                             ),
                           ),
@@ -150,3 +151,4 @@ class _AppToastState extends State<_AppToast>
     );
   }
 }
+

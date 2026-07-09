@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/budget.dart';
 import '../../data/repositories/budget_repository.dart';
 
@@ -21,7 +21,8 @@ class BudgetNotifier extends AsyncNotifier<BudgetSummary?> {
     } catch (e) {
       final errStr = e.toString();
       // Si el backend responde 404 (no encontrado), significa que no hay presupuesto para este mes
-      if (errStr.contains('404') || errStr.toLowerCase().contains('no se encontró')) {
+      if (errStr.contains('404') ||
+          errStr.toLowerCase().contains('no se encontró')) {
         return null;
       }
       rethrow;
@@ -44,10 +45,7 @@ class BudgetNotifier extends AsyncNotifier<BudgetSummary?> {
   Future<void> addAdditionalIncome(double monto, String descripcion) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await _repository.addIncome(
-        monto: monto,
-        descripcion: descripcion,
-      );
+      await _repository.addIncome(monto: monto, descripcion: descripcion);
       return _loadBudget();
     });
   }
@@ -58,4 +56,7 @@ class BudgetNotifier extends AsyncNotifier<BudgetSummary?> {
   }
 }
 
-final budgetProvider = AsyncNotifierProvider<BudgetNotifier, BudgetSummary?>(BudgetNotifier.new);
+final budgetProvider = AsyncNotifierProvider<BudgetNotifier, BudgetSummary?>(
+  BudgetNotifier.new,
+);
+
