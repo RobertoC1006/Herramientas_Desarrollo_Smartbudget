@@ -9,6 +9,7 @@ import '../../core/utils/category_utils.dart';
 import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/budget_overflow_dialog.dart';
 import '../../core/widgets/category_icon.dart';
+import '../../core/widgets/finance_background.dart';
 import '../../services/ocr_service.dart';
 
 class OcrConfirmationPage extends ConsumerStatefulWidget {
@@ -190,163 +191,167 @@ class _OcrConfirmationPageState extends ConsumerState<OcrConfirmationPage> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.3),
+      body: FinanceBackground(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    widget.source == 'pdf'
-                        ? Icons.picture_as_pdf_rounded
-                        : Icons.document_scanner_rounded,
-                    color: AppColors.primary,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      'Revisa los datos extraídos del documento. Puedes editarlos si es necesario.',
-                      style: TextStyle(
-                        color: context.financeText,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: context.financeSurface,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 24,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                child: Row(
                   children: [
-                    _FormLabel(label: 'Comercio / Entidad'),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _merchantController,
-                      decoration: _inputDecoration().copyWith(
-                        hintText: 'Ej: Supermercado',
-                      ),
-                      validator: (v) =>
-                          v == null || v.isEmpty ? 'Requerido' : null,
+                    Icon(
+                      widget.source == 'pdf'
+                          ? Icons.picture_as_pdf_rounded
+                          : Icons.document_scanner_rounded,
+                      color: AppColors.primary,
+                      size: 28,
                     ),
-                    const SizedBox(height: 16),
-
-                    _FormLabel(label: 'Monto (S/)'),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _amountController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: _inputDecoration().copyWith(
-                        prefixText: 'S/ ',
-                        prefixStyle: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Requerido';
-                        if (double.tryParse(v) == null) return 'Monto inválido';
-                        final parsedAmount = double.tryParse(v) ?? 0;
-                        if (parsedAmount <= 0) {
-                          return 'El monto debe ser mayor a 0';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    _FormLabel(label: 'Fecha'),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _dateController,
-                      readOnly: true,
-                      onTap: _pickDate,
-                      decoration: _inputDecoration().copyWith(
-                        suffixIcon: const Icon(
-                          Icons.calendar_today_rounded,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    _FormLabel(label: 'Categoría'),
-                    const SizedBox(height: 8),
-                    _buildCategoryDropdown(),
-                    const SizedBox(height: 16),
-
-                    _FormLabel(label: 'Descripción (Opcional)'),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: _inputDecoration().copyWith(
-                        hintText: 'Ej: Compra mensual',
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    SizedBox(
-                      height: 56,
-                      child: ElevatedButton.icon(
-                        onPressed: _confirmExpense,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                        icon: const Icon(
-                          Icons.check_rounded,
-                          color: Colors.white,
-                        ),
-                        label: const Text(
-                          'Confirmar y Guardar',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'Revisa los datos extraídos del documento. Puedes editarlos si es necesario.',
+                        style: TextStyle(
+                          color: context.financeText,
+                          fontSize: 14,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: context.financeSurface,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.shadow,
+                      blurRadius: 24,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _FormLabel(label: 'Comercio / Entidad'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _merchantController,
+                        decoration: _inputDecoration().copyWith(
+                          hintText: 'Ej: Supermercado',
+                        ),
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Requerido' : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      _FormLabel(label: 'Monto (S/)'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _amountController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: _inputDecoration().copyWith(
+                          prefixText: 'S/ ',
+                          prefixStyle: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Requerido';
+                          if (double.tryParse(v) == null) {
+                            return 'Monto inválido';
+                          }
+                          final parsedAmount = double.tryParse(v) ?? 0;
+                          if (parsedAmount <= 0) {
+                            return 'El monto debe ser mayor a 0';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      _FormLabel(label: 'Fecha'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _dateController,
+                        readOnly: true,
+                        onTap: _pickDate,
+                        decoration: _inputDecoration().copyWith(
+                          suffixIcon: const Icon(
+                            Icons.calendar_today_rounded,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      _FormLabel(label: 'Categoría'),
+                      const SizedBox(height: 8),
+                      _buildCategoryDropdown(),
+                      const SizedBox(height: 16),
+
+                      _FormLabel(label: 'Descripción (Opcional)'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _descriptionController,
+                        decoration: _inputDecoration().copyWith(
+                          hintText: 'Ej: Compra mensual',
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      SizedBox(
+                        height: 56,
+                        child: ElevatedButton.icon(
+                          onPressed: _confirmExpense,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          icon: const Icon(
+                            Icons.check_rounded,
+                            color: Colors.white,
+                          ),
+                          label: const Text(
+                            'Confirmar y Guardar',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

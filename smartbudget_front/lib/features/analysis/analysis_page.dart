@@ -4,9 +4,11 @@ import 'package:fl_chart/fl_chart.dart';
 
 import '../../core/providers/transactions_provider.dart';
 import '../../core/providers/smartscore_provider.dart';
+import '../../core/providers/privacy_settings_provider.dart';
 import '../../core/theme/adaptive_colors.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/finance_background.dart';
 import '../../data/models/transaction.dart';
 import '../../data/models/smart_core_snapshot.dart';
 import '../expenses/add_expense_page.dart' show TransactionTile;
@@ -39,6 +41,9 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
   void initState() {
     super.initState();
     _lastHistoryFocusRequest = widget.historyFocusRequest;
+    if (widget.historyFocusRequest > 0) {
+      _scrollToHistorySection();
+    }
   }
 
   @override
@@ -72,18 +77,22 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
     return transactionsState.when(
       loading: () => Scaffold(
         backgroundColor: context.financeBackground,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        body: FinanceBackground(
+          child: Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
         ),
       ),
       error: (error, _) => Scaffold(
         backgroundColor: context.financeBackground,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              'Error al cargar datos del análisis: $error',
-              textAlign: TextAlign.center,
+        body: FinanceBackground(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Error al cargar datos del análisis: $error',
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
         ),
@@ -111,42 +120,47 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
 
         return Scaffold(
           backgroundColor: context.financeBackground,
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('Análisis', style: AppTextStyles.heading2),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Visualiza y optimiza tus finanzas',
-                    style: AppTextStyles.body.copyWith(
-                      color: context.financeTextSecondary,
+          body: FinanceBackground(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('Análisis', style: AppTextStyles.heading2),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Visualiza y optimiza tus finanzas',
+                      style: AppTextStyles.body.copyWith(
+                        color: context.financeTextSecondary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 30),
+                    const SizedBox(height: 30),
 
-                  _buildDistributionCard(expensesByCategory, categories),
-                  const SizedBox(height: 24),
+                    _buildDistributionCard(expensesByCategory, categories),
+                    const SizedBox(height: 24),
 
-                  _buildWhatIfCard(expensesByCategory, categories),
-                  const SizedBox(height: 24),
+                    _buildWhatIfCard(expensesByCategory, categories),
+                    const SizedBox(height: 24),
 
-                  _buildScoreHistoryCard(context, ref, historyState),
-                  const SizedBox(height: 30),
+                    _buildScoreHistoryCard(context, ref, historyState),
+                    const SizedBox(height: 30),
 
-                  KeyedSubtree(
-                    key: _historySectionKey,
-                    child: Text(
-                      'Historial de Gastos',
-                      style: AppTextStyles.heading3,
+                    KeyedSubtree(
+                      key: _historySectionKey,
+                      child: Text(
+                        'Historial de Gastos',
+                        style: AppTextStyles.heading3,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildHistoryList(expenses),
-                  const SizedBox(height: 80),
-                ],
+                    const SizedBox(height: 16),
+                    _buildHistoryList(expenses),
+                    const SizedBox(height: 80),
+                  ],
+                ),
               ),
             ),
           ),
@@ -512,6 +526,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
     Map<String, double> expensesByCategory,
     List<String> categories,
   ) {
+    final hideAmounts = ref.watch(privacySettingsProvider).hideAmounts;
     double currentCategoryExpense = _selectedCategoryToReduce != null
         ? (expensesByCategory[_selectedCategoryToReduce!] ?? 0.0)
         : 0.0;
@@ -654,7 +669,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
                         style: AppTextStyles.small,
                       ),
                       Text(
-                        '+ S/ ${savings.toStringAsFixed(2)} al mes',
+                        '${privacyAmount(savings, hidden: hideAmounts, positive: true)} al mes',
                         style: AppTextStyles.label.copyWith(
                           color: AppColors.primary,
                           fontSize: 16,

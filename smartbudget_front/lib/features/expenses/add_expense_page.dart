@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../../core/providers/budget_provider.dart';
+import '../../core/providers/privacy_settings_provider.dart';
 import '../../core/providers/transactions_provider.dart';
 import '../../core/theme/adaptive_colors.dart';
 import '../../core/theme/app_colors.dart';
@@ -14,6 +15,7 @@ import '../../core/widgets/app_confirm_dialog.dart';
 import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/budget_overflow_dialog.dart';
 import '../../core/widgets/category_icon.dart';
+import '../../core/widgets/finance_background.dart';
 import '../../data/models/transaction.dart';
 import '../../services/ocr_service.dart';
 import 'ocr_confirmation_page.dart';
@@ -94,9 +96,22 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
         if (mounted) {
           setState(() => _isScanning = false);
           final result = await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) =>
+            PageRouteBuilder<bool>(
+              transitionDuration: const Duration(milliseconds: 260),
+              reverseTransitionDuration: const Duration(milliseconds: 220),
+              pageBuilder: (_, _, _) =>
                   OcrConfirmationPage(ocrResult: ocrResult, source: source),
+              transitionsBuilder: (_, animation, _, child) {
+                final offsetAnimation =
+                    Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+                        .chain(CurveTween(curve: Curves.easeOutCubic))
+                        .animate(animation);
+
+                return SlideTransition(
+                  position: offsetAnimation,
+                  child: FadeTransition(opacity: animation, child: child),
+                );
+              },
             ),
           );
           if (result == true) {
@@ -267,179 +282,186 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.financeBackground,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Agregar Gasto', style: AppTextStyles.heading2),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Elige una opción para registrar tu gasto',
-                          style: AppTextStyles.body.copyWith(
-                            color: context.financeTextSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Scan options card
-                  _buildScanOptions(),
-
-                  // Card form
-                  Container(
-                    decoration: BoxDecoration(
-                      color: context.financeSurface,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: AppColors.shadow,
-                          blurRadius: 24,
-                          offset: Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Form(
-                      key: _formKey,
+      body: FinanceBackground(
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Card header – green accent bar
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 20,
-                            ),
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(28),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.edit_rounded,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Registro Manual',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Ingresa los detalles del gasto',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.8,
-                                        ),
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Form body
-                          Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Category
-                                _FormLabel(label: 'Categoría'),
-                                const SizedBox(height: 8),
-                                _buildCategoryDropdown(),
-                                const SizedBox(height: 20),
-
-                                // Amount
-                                _FormLabel(label: 'Monto (S/)'),
-                                const SizedBox(height: 8),
-                                _buildAmountField(),
-                                const SizedBox(height: 20),
-
-                                // Description
-                                _FormLabel(label: 'Descripción (opcional)'),
-                                const SizedBox(height: 8),
-                                _buildDescriptionField(),
-                                const SizedBox(height: 28),
-
-                                // Submit button
-                                SizedBox(
-                                  height: 56,
-                                  child: ElevatedButton.icon(
-                                    onPressed: _isSubmitting || _isScanning
-                                        ? null
-                                        : _submit,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      disabledBackgroundColor:
-                                          AppColors.primaryLight,
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                    ),
-                                    icon: _isSubmitting
-                                        ? const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                        : const Icon(
-                                            Icons.add_rounded,
-                                            color: Colors.white,
-                                            size: 22,
-                                          ),
-                                    label: Text(
-                                      'Agregar Gasto Manual',
-                                      style: AppTextStyles.button.copyWith(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          Text('Agregar Gasto', style: AppTextStyles.heading2),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Elige una opción para registrar tu gasto',
+                            style: AppTextStyles.body.copyWith(
+                              color: context.financeTextSecondary,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ],
+
+                    // Scan options card
+                    _buildScanOptions(),
+
+                    // Card form
+                    Container(
+                      decoration: BoxDecoration(
+                        color: context.financeSurface,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: AppColors.shadow,
+                            blurRadius: 24,
+                            offset: Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Card header – green accent bar
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 20,
+                              ),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(28),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.edit_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Registro Manual',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Ingresa los detalles del gasto',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.8,
+                                          ),
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Form body
+                            Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Category
+                                  _FormLabel(label: 'Categoría'),
+                                  const SizedBox(height: 8),
+                                  _buildCategoryDropdown(),
+                                  const SizedBox(height: 20),
+
+                                  // Amount
+                                  _FormLabel(label: 'Monto (S/)'),
+                                  const SizedBox(height: 8),
+                                  _buildAmountField(),
+                                  const SizedBox(height: 20),
+
+                                  // Description
+                                  _FormLabel(label: 'Descripción (opcional)'),
+                                  const SizedBox(height: 8),
+                                  _buildDescriptionField(),
+                                  const SizedBox(height: 28),
+
+                                  // Submit button
+                                  SizedBox(
+                                    height: 56,
+                                    child: ElevatedButton.icon(
+                                      onPressed: _isSubmitting || _isScanning
+                                          ? null
+                                          : _submit,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        disabledBackgroundColor:
+                                            AppColors.primaryLight,
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                        ),
+                                      ),
+                                      icon: _isSubmitting
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : const Icon(
+                                              Icons.add_rounded,
+                                              color: Colors.white,
+                                              size: 22,
+                                            ),
+                                      label: Text(
+                                        'Agregar Gasto Manual',
+                                        style: AppTextStyles.button.copyWith(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -633,6 +655,7 @@ class TransactionTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final hideAmounts = ref.watch(privacySettingsProvider).hideAmounts;
     final info = CategoryUtils.getCategoryInfo(transaction.category);
     final time =
         '${transaction.date.hour.toString().padLeft(2, '0')}:${transaction.date.minute.toString().padLeft(2, '0')}';
@@ -698,7 +721,11 @@ class TransactionTile extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
-                '-S/ ${transaction.amount.toStringAsFixed(2)}',
+                privacyAmount(
+                  transaction.amount,
+                  hidden: hideAmounts,
+                  negative: true,
+                ),
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,

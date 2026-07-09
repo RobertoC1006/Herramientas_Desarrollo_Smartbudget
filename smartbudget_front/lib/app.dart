@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,20 +8,46 @@ import 'features/auth/login_page.dart';
 import 'features/auth/register_page.dart';
 import 'features/dashboard/main_layout.dart';
 
+CustomTransitionPage<void> _slidePage({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 260),
+    reverseTransitionDuration: const Duration(milliseconds: 220),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final offsetAnimation = Tween<Offset>(
+        begin: const Offset(1, 0),
+        end: Offset.zero,
+      ).chain(CurveTween(curve: Curves.easeOutCubic)).animate(animation);
+
+      return SlideTransition(
+        position: offsetAnimation,
+        child: FadeTransition(opacity: animation, child: child),
+      );
+    },
+  );
+}
+
 final appRouter = GoRouter(
   initialLocation: LoginPage.routePath,
   routes: [
     GoRoute(
       path: LoginPage.routePath,
-      builder: (context, state) => const LoginPage(),
+      pageBuilder: (context, state) =>
+          _slidePage(state: state, child: const LoginPage()),
     ),
     GoRoute(
       path: RegisterPage.routePath,
-      builder: (context, state) => const RegisterPage(),
+      pageBuilder: (context, state) =>
+          _slidePage(state: state, child: const RegisterPage()),
     ),
     GoRoute(
       path: MainLayout.routePath,
-      builder: (context, state) => const MainLayout(),
+      pageBuilder: (context, state) =>
+          _slidePage(state: state, child: const MainLayout()),
     ),
   ],
 );
@@ -43,4 +69,3 @@ class SmartBugdetApp extends ConsumerWidget {
     );
   }
 }
-

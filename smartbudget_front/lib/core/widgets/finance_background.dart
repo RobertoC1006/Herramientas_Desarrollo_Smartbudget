@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
@@ -15,17 +15,21 @@ class FinanceBackground extends StatelessWidget {
         ? const Color(0xFF0B1F17)
         : AppColors.backgroundSoft;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [theme.scaffoldBackgroundColor, backgroundSoft],
+    return RepaintBoundary(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [theme.scaffoldBackgroundColor, backgroundSoft],
+          ),
         ),
-      ),
-      child: CustomPaint(
-        painter: _FinanceGridPainter(isDark: isDark),
-        child: child,
+        child: CustomPaint(
+          painter: _FinanceGridPainter(isDark: isDark),
+          isComplex: false,
+          willChange: false,
+          child: child,
+        ),
       ),
     );
   }
@@ -56,4 +60,3 @@ class _FinanceGridPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

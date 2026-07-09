@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/budget_provider.dart';
+import '../../core/providers/privacy_settings_provider.dart';
 import '../../core/providers/theme_mode_provider.dart';
 import '../../core/providers/transactions_provider.dart';
 import '../../core/theme/adaptive_colors.dart';
@@ -60,6 +61,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final budgetState = ref.watch(budgetProvider);
     final transactionsState = ref.watch(transactionsProvider);
     final authState = ref.watch(authControllerProvider);
+    final hideAmounts = ref.watch(privacySettingsProvider).hideAmounts;
 
     final userName = authState.value?.nombre ?? 'Usuario';
 
@@ -67,8 +69,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     if (budgetState.isLoading || transactionsState.isLoading) {
       return Scaffold(
         backgroundColor: context.financeBackground,
-        body: const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        body: const FinanceBackground(
+          child: Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
         ),
       );
     }
@@ -78,38 +82,40 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       final error = budgetState.error ?? transactionsState.error;
       return Scaffold(
         backgroundColor: context.financeBackground,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline_rounded,
-                  size: 48,
-                  color: AppColors.danger,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Error al conectar con el servidor:\n$error',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.body,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    ref.read(budgetProvider.notifier).refresh();
-                    ref.read(transactionsProvider.notifier).refresh();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+        body: FinanceBackground(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    size: 48,
+                    color: AppColors.danger,
                   ),
-                  child: const Text(
-                    'Reintentar',
-                    style: TextStyle(color: Colors.white),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error al conectar con el servidor:\n$error',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.body,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      ref.read(budgetProvider.notifier).refresh();
+                      ref.read(transactionsProvider.notifier).refresh();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                    ),
+                    child: const Text(
+                      'Reintentar',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -154,11 +160,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     _buildBalanceCard(
                       balance: balance,
                       totalIncome: totalIncome,
+                      hideAmounts: hideAmounts,
                     ),
                     const SizedBox(height: AppSpacing.xl),
-                    _buildIncomeExpenseRow(totalIncome, totalExpenses),
+                    _buildIncomeExpenseRow(
+                      totalIncome,
+                      totalExpenses,
+                      hideAmounts,
+                    ),
                     const SizedBox(height: AppSpacing.section),
-                    _buildBudgetProgress(budget, totalExpenses),
+                    _buildBudgetProgress(budget, totalExpenses, hideAmounts),
                     const SizedBox(height: AppSpacing.section),
                     _SectionHeader(
                       title: 'Actividad reciente',
@@ -336,17 +347,26 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget _buildBalanceCard({
     required double balance,
     required double totalIncome,
+    required bool hideAmounts,
   }) {
-    return _BalanceCard(balance: balance, totalIncome: totalIncome);
+    return _BalanceCard(
+      balance: balance,
+      totalIncome: totalIncome,
+      hideAmounts: hideAmounts,
+    );
   }
 
-  Widget _buildIncomeExpenseRow(double totalIncome, double totalExpenses) {
+  Widget _buildIncomeExpenseRow(
+    double totalIncome,
+    double totalExpenses,
+    bool hideAmounts,
+  ) {
     return Row(
       children: [
         Expanded(
           child: _SummaryCard(
             title: 'Presupuesto/Ingresos',
-            amount: 'S/ ${totalIncome.toStringAsFixed(2)}',
+            amount: privacyAmount(totalIncome, hidden: hideAmounts),
             icon: Icons.arrow_downward,
             iconColor: AppColors.primary,
             backgroundColor: AppColors.primaryLight,
@@ -356,7 +376,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         Expanded(
           child: _SummaryCard(
             title: 'Gastos',
-            amount: 'S/ ${totalExpenses.toStringAsFixed(2)}',
+            amount: privacyAmount(totalExpenses, hidden: hideAmounts),
             icon: Icons.arrow_upward,
             iconColor: AppColors.danger,
             backgroundColor: AppColors.danger.withValues(alpha: 0.1),
@@ -366,7 +386,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     );
   }
 
-  Widget _buildBudgetProgress(double budget, double totalExpenses) {
+  Widget _buildBudgetProgress(
+    double budget,
+    double totalExpenses,
+    bool hideAmounts,
+  ) {
     final rawProgress = budget > 0 ? totalExpenses / budget : 0.0;
     final progress = rawProgress.clamp(0.0, 1.0);
     final remaining = budget - totalExpenses;
@@ -383,10 +407,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ? AppColors.warningSoft
         : AppColors.primaryLight;
     final message = isOverBudget
-        ? 'Presupuesto excedido por S/ ${remaining.abs().toStringAsFixed(2)}'
+        ? 'Presupuesto excedido por ${privacyAmount(remaining.abs(), hidden: hideAmounts)}'
         : isNearLimit
         ? 'Estás cerca de tu límite mensual'
-        : 'Te quedan S/ ${remaining.toStringAsFixed(2)} para este mes';
+        : 'Te quedan ${privacyAmount(remaining, hidden: hideAmounts)} para este mes';
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -440,7 +464,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ),
               ),
               Text(
-                'S/ ${totalExpenses.toStringAsFixed(2)} / S/ ${budget.toStringAsFixed(2)}',
+                '${privacyAmount(totalExpenses, hidden: hideAmounts)} / ${privacyAmount(budget, hidden: hideAmounts)}',
                 style: AppTextStyles.label,
               ),
             ],
@@ -514,144 +538,148 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 430),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 88,
-                    height: 88,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(25),
+      body: FinanceBackground(
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 430),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet_rounded,
+                        size: 48,
+                        color: AppColors.primary,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.account_balance_wallet_rounded,
-                      size: 48,
-                      color: AppColors.primary,
+                    const SizedBox(height: 24),
+                    Text('Presupuesto Mensual', style: AppTextStyles.heading2),
+                    const SizedBox(height: 8),
+                    Text(
+                      '¡Hola, $userName!\nAún no has configurado tu presupuesto para este mes. Configúralo para empezar a registrar tus gastos.',
+                      style: AppTextStyles.body.copyWith(
+                        color: context.financeTextSecondary,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text('Presupuesto Mensual', style: AppTextStyles.heading2),
-                  const SizedBox(height: 8),
-                  Text(
-                    '¡Hola, $userName!\nAún no has configurado tu presupuesto para este mes. Configúralo para empezar a registrar tus gastos.',
-                    style: AppTextStyles.body.copyWith(
-                      color: context.financeTextSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: context.financeSurface,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: AppColors.shadow,
-                          blurRadius: 24,
-                          offset: Offset(0, 12),
-                        ),
-                      ],
-                    ),
-                    child: Form(
-                      key: formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Text(
-                            'Monto Base / Ingreso Mensual (S/)',
-                            style: AppTextStyles.label,
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: budgetController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            decoration: InputDecoration(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                              hintText: 'Ej: 2000.00',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(
-                                  color: AppColors.border,
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(
-                                  color: AppColors.border,
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-                            validator: (v) {
-                              if (v == null || v.isEmpty) {
-                                return 'Ingresa un monto';
-                              }
-                              if (double.tryParse(v) == null) {
-                                return 'Monto inválido';
-                              }
-                              if ((double.tryParse(v) ?? 0) <= 0) {
-                                return 'Debe ser mayor que 0';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 24),
-                          SizedBox(
-                            height: 54,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                if (formKey.currentState?.validate() ?? false) {
-                                  final amount = double.parse(
-                                    budgetController.text,
-                                  );
-                                  ref
-                                      .read(budgetProvider.notifier)
-                                      .createBudget(amount);
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: const Text(
-                                'Establecer Presupuesto',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                    const SizedBox(height: 32),
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: context.financeSurface,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: AppColors.shadow,
+                            blurRadius: 24,
+                            offset: Offset(0, 12),
                           ),
                         ],
                       ),
+                      child: Form(
+                        key: formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Text(
+                              'Monto Base / Ingreso Mensual (S/)',
+                              style: AppTextStyles.label,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: budgetController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              decoration: InputDecoration(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                                hintText: 'Ej: 2000.00',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.border,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.border,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) {
+                                  return 'Ingresa un monto';
+                                }
+                                if (double.tryParse(v) == null) {
+                                  return 'Monto inválido';
+                                }
+                                if ((double.tryParse(v) ?? 0) <= 0) {
+                                  return 'Debe ser mayor que 0';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              height: 54,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  if (formKey.currentState?.validate() ??
+                                      false) {
+                                    final amount = double.parse(
+                                      budgetController.text,
+                                    );
+                                    ref
+                                        .read(budgetProvider.notifier)
+                                        .createBudget(amount);
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Establecer Presupuesto',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -744,8 +772,13 @@ class _CircleTopButton extends StatelessWidget {
 class _BalanceCard extends StatelessWidget {
   final double balance;
   final double totalIncome;
+  final bool hideAmounts;
 
-  const _BalanceCard({required this.balance, required this.totalIncome});
+  const _BalanceCard({
+    required this.balance,
+    required this.totalIncome,
+    required this.hideAmounts,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -856,7 +889,7 @@ class _BalanceCard extends StatelessWidget {
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 350),
                   child: Text(
-                    'S/ ${balance.toStringAsFixed(2)}',
+                    privacyAmount(balance, hidden: hideAmounts),
                     key: ValueKey(isOverBudget),
                     style: const TextStyle(
                       color: Colors.white,
@@ -879,7 +912,7 @@ class _BalanceCard extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'Ingresos considerados: S/ ${totalIncome.toStringAsFixed(2)}',
+                    'Ingresos considerados: ${privacyAmount(totalIncome, hidden: hideAmounts)}',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.86),
                       fontSize: 12,
@@ -890,7 +923,7 @@ class _BalanceCard extends StatelessWidget {
                 if (isOverBudget) ...[
                   const SizedBox(height: 8),
                   Text(
-                    'Te excediste por S/ ${exceededAmount.toStringAsFixed(2)}',
+                    'Te excediste por ${privacyAmount(exceededAmount, hidden: hideAmounts)}',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.86),
                       fontSize: 13,

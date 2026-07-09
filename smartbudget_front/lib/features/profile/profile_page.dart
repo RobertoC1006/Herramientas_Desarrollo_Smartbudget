@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers/budget_provider.dart';
+import '../../core/providers/privacy_settings_provider.dart';
 import '../../core/theme/adaptive_colors.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_toast.dart';
+import '../../core/widgets/finance_background.dart';
 import '../auth/auth_controller.dart';
 import '../auth/login_page.dart';
 
@@ -22,8 +24,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   bool _notificationsEnabled = true;
   bool _budgetAlertsEnabled = true;
   bool _goalRemindersEnabled = false;
-  bool _biometricLockEnabled = false;
-  bool _hideAmountsEnabled = false;
 
   @override
   void initState() {
@@ -308,8 +308,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final privacySettings = ref.watch(privacySettingsProvider);
+
             return _SettingsSheet(
               title: 'Privacidad y seguridad',
               icon: Icons.shield_outlined,
@@ -317,19 +319,35 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 _SettingsSwitchTile(
                   title: 'Ocultar montos',
                   subtitle: 'Reduce la visibilidad de importes en público',
-                  value: _hideAmountsEnabled,
+                  value: privacySettings.hideAmounts,
                   onChanged: (value) {
-                    setState(() => _hideAmountsEnabled = value);
-                    setSheetState(() {});
+                    ref
+                        .read(privacySettingsProvider.notifier)
+                        .setHideAmounts(value);
+                    _showTopToast(
+                      value ? 'Montos ocultos' : 'Montos visibles',
+                      icon: value
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    );
                   },
                 ),
                 _SettingsSwitchTile(
                   title: 'Bloqueo biométrico',
                   subtitle: 'Requerir validación al volver a la app',
-                  value: _biometricLockEnabled,
+                  value: privacySettings.appLockEnabled,
                   onChanged: (value) {
-                    setState(() => _biometricLockEnabled = value);
-                    setSheetState(() {});
+                    ref
+                        .read(privacySettingsProvider.notifier)
+                        .setAppLockEnabled(value);
+                    _showTopToast(
+                      value
+                          ? 'Bloqueo de privacidad activado'
+                          : 'Bloqueo de privacidad desactivado',
+                      icon: value
+                          ? Icons.lock_outline_rounded
+                          : Icons.lock_open_rounded,
+                    );
                   },
                 ),
                 _SettingsActionTile(
@@ -544,50 +562,55 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     return Scaffold(
       backgroundColor: context.financeBackground,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildProfileHeader(
-                    user?.nombre ?? 'Usuario',
-                    user?.email ?? 'usuario@email.com',
-                  ),
-                  const SizedBox(height: 20),
+      body: FinanceBackground(
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 30,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildProfileHeader(
+                      user?.nombre ?? 'Usuario',
+                      user?.email ?? 'usuario@email.com',
+                    ),
+                    const SizedBox(height: 20),
 
-                  _buildBudgetSection(),
-                  const SizedBox(height: 20),
+                    _buildBudgetSection(),
+                    const SizedBox(height: 20),
 
-                  _buildSettingsSection(),
-                  const SizedBox(height: 30),
+                    _buildSettingsSection(),
+                    const SizedBox(height: 30),
 
-                  SizedBox(
-                    height: 54,
-                    child: OutlinedButton.icon(
-                      onPressed: _logout,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.danger,
-                        side: const BorderSide(color: AppColors.danger),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                    SizedBox(
+                      height: 54,
+                      child: OutlinedButton.icon(
+                        onPressed: _logout,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.danger,
+                          side: const BorderSide(color: AppColors.danger),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
-                      ),
-                      icon: const Icon(Icons.logout, size: 20),
-                      label: const Text(
-                        'Cerrar sesión',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                        icon: const Icon(Icons.logout, size: 20),
+                        label: const Text(
+                          'Cerrar sesión',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 80),
-                ],
+                    const SizedBox(height: 80),
+                  ],
+                ),
               ),
             ),
           ),
@@ -653,6 +676,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Widget _buildBudgetSection() {
+    final hideAmounts = ref.watch(privacySettingsProvider).hideAmounts;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -765,7 +790,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     .maybeWhen(
                       data: (summary) => Text(
                         summary != null
-                            ? 'S/ ${summary.montoBase.toStringAsFixed(2)}'
+                            ? privacyAmount(
+                                summary.montoBase,
+                                hidden: hideAmounts,
+                              )
                             : 'No configurado',
                         style: AppTextStyles.small.copyWith(
                           color: AppColors.primaryDark,
@@ -987,7 +1015,7 @@ class _SettingsSwitchTile extends StatelessWidget {
                   title,
                   style: AppTextStyles.label.copyWith(
                     color: enabled
-                        ? AppColors.textPrimary
+                        ? context.financeText
                         : context.financeTextMuted,
                   ),
                 ),
@@ -996,7 +1024,7 @@ class _SettingsSwitchTile extends StatelessWidget {
                   subtitle,
                   style: AppTextStyles.small.copyWith(
                     color: enabled
-                        ? AppColors.textSecondary
+                        ? context.financeTextSecondary
                         : context.financeTextMuted,
                   ),
                 ),

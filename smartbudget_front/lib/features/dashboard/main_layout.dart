@@ -1,53 +1,108 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/privacy_settings_provider.dart';
+import '../../core/theme/adaptive_colors.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_toast.dart';
+import '../../core/widgets/finance_background.dart';
 import '../analysis/analysis_page.dart';
 import '../expenses/add_expense_page.dart';
 import '../goals/goals_page.dart';
 import '../profile/profile_page.dart';
 import 'dashboard_page.dart';
 
-class MainLayout extends StatefulWidget {
+class MainLayout extends ConsumerStatefulWidget {
   const MainLayout({super.key});
 
   static const String routePath = '/home';
 
   @override
-  State<MainLayout> createState() => _MainLayoutState();
+  ConsumerState<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends State<MainLayout> {
+class _MainLayoutState extends ConsumerState<MainLayout>
+    with WidgetsBindingObserver {
+  static const _pageTransitionDuration = Duration(milliseconds: 260);
+  static const _pageTransitionCurve = Curves.easeOutCubic;
+
+  late final PageController _pageController;
   int _currentIndex = 0;
   int _analysisHistoryFocusRequest = 0;
 
-  void _openProfileSettings() {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(privacySettingsProvider.notifier).lockIfEnabled();
+    }
+  }
+
+  void _goToTab(int index) {
+    if (index == _currentIndex) return;
+
     setState(() {
-      _currentIndex = 4;
+      _currentIndex = index;
     });
+
+    if (!_pageController.hasClients) return;
+    _pageController.animateToPage(
+      index,
+      duration: _pageTransitionDuration,
+      curve: _pageTransitionCurve,
+    );
+  }
+
+  void _openProfileSettings() {
+    _goToTab(4);
   }
 
   void _openAnalysisHistory() {
     setState(() {
       _analysisHistoryFocusRequest++;
-      _currentIndex = 3;
     });
+    _goToTab(3);
   }
 
   @override
   Widget build(BuildContext context) {
+    final privacySettings = ref.watch(privacySettingsProvider);
+
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
+      body: Stack(
         children: [
-          DashboardPage(
-            onOpenSettings: _openProfileSettings,
-            onViewAllTransactions: _openAnalysisHistory,
+          PageView(
+            controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            allowImplicitScrolling: false,
+            children: [
+              DashboardPage(
+                onOpenSettings: _openProfileSettings,
+                onViewAllTransactions: _openAnalysisHistory,
+              ),
+              const AddExpensePage(),
+              const GoalsPage(),
+              AnalysisPage(historyFocusRequest: _analysisHistoryFocusRequest),
+              const ProfilePage(),
+            ],
           ),
-          const AddExpensePage(),
-          const GoalsPage(),
-          AnalysisPage(historyFocusRequest: _analysisHistoryFocusRequest),
-          const ProfilePage(),
+          if (privacySettings.isLocked) const _PrivacyLockOverlay(),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -83,9 +138,7 @@ class _MainLayoutState extends State<MainLayout> {
               child: BottomNavigationBar(
                 currentIndex: _currentIndex,
                 onTap: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
+                  _goToTab(index);
                 },
                 elevation: 0,
                 backgroundColor: Colors.transparent,
@@ -116,6 +169,97 @@ class _MainLayoutState extends State<MainLayout> {
                     label: 'Perfil',
                   ),
                 ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PrivacyLockOverlay extends ConsumerWidget {
+  const _PrivacyLockOverlay();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Positioned.fill(
+      child: FinanceBackground(
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Container(
+                margin: const EdgeInsets.all(AppSpacing.xl),
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                decoration: BoxDecoration(
+                  color: context.financeSurface,
+                  borderRadius: BorderRadius.circular(AppRadius.xxl),
+                  border: Border.all(color: context.financeBorder),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.black.withValues(alpha: 0.34)
+                          : AppColors.shadow,
+                      blurRadius: 24,
+                      offset: const Offset(0, 14),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      width: 58,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                      ),
+                      child: const Icon(
+                        Icons.lock_outline_rounded,
+                        color: AppColors.primary,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      'App bloqueada',
+                      style: AppTextStyles.heading2.copyWith(
+                        color: context.financeText,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Tus datos financieros están protegidos. Desbloquea para continuar.',
+                      style: AppTextStyles.body.copyWith(
+                        color: context.financeTextSecondary,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    SizedBox(
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          ref.read(privacySettingsProvider.notifier).unlock();
+                        },
+                        icon: const Icon(
+                          Icons.fingerprint_rounded,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          'Desbloquear',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

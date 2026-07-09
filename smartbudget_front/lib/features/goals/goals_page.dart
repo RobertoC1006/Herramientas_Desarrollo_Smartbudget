@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/goals_provider.dart';
+import '../../core/providers/privacy_settings_provider.dart';
 import '../../core/theme/adaptive_colors.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_toast.dart';
+import '../../core/widgets/finance_background.dart';
 import '../../data/models/goal.dart';
 
 class GoalsPage extends ConsumerStatefulWidget {
@@ -213,89 +215,91 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
 
     return Scaffold(
       backgroundColor: context.financeBackground,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Mis Metas', style: AppTextStyles.heading2),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Ahorra para tus sueños',
-                        style: AppTextStyles.body.copyWith(
-                          color: context.financeTextSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  FloatingActionButton(
-                    heroTag: 'add_goal',
-                    mini: true,
-                    onPressed: _showAddGoalDialog,
-                    backgroundColor: AppColors.primary,
-                    elevation: 0,
-                    child: const Icon(Icons.add, color: Colors.white),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-              Expanded(
-                child: goalsState.when(
-                  data: (goals) => goals.isEmpty
-                      ? _buildEmptyState()
-                      : RefreshIndicator(
-                          onRefresh: () =>
-                              ref.read(goalsProvider.notifier).refresh(),
-                          child: ListView.separated(
-                            itemCount: goals.length,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 20),
-                            itemBuilder: (context, index) {
-                              final goal = goals[index];
-                              return _buildGoalCard(goal);
-                            },
-                          ),
-                        ),
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (err, stack) => Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+      body: FinanceBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.error_outline_rounded,
-                          color: AppColors.primary,
-                          size: 48,
-                        ),
-                        const SizedBox(height: 16),
+                        Text('Mis Metas', style: AppTextStyles.heading2),
+                        const SizedBox(height: 4),
                         Text(
-                          'Error al cargar metas',
-                          style: AppTextStyles.heading3,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          err.toString(),
-                          style: AppTextStyles.body,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () =>
-                              ref.read(goalsProvider.notifier).refresh(),
-                          child: const Text('Reintentar'),
+                          'Ahorra para tus sueños',
+                          style: AppTextStyles.body.copyWith(
+                            color: context.financeTextSecondary,
+                          ),
                         ),
                       ],
                     ),
+                    FloatingActionButton(
+                      heroTag: 'add_goal',
+                      mini: true,
+                      onPressed: _showAddGoalDialog,
+                      backgroundColor: AppColors.primary,
+                      elevation: 0,
+                      child: const Icon(Icons.add, color: Colors.white),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 30),
+                Expanded(
+                  child: goalsState.when(
+                    data: (goals) => goals.isEmpty
+                        ? _buildEmptyState()
+                        : RefreshIndicator(
+                            onRefresh: () =>
+                                ref.read(goalsProvider.notifier).refresh(),
+                            child: ListView.separated(
+                              itemCount: goals.length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 20),
+                              itemBuilder: (context, index) {
+                                final goal = goals[index];
+                                return _buildGoalCard(goal);
+                              },
+                            ),
+                          ),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (err, stack) => Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            color: AppColors.primary,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error al cargar metas',
+                            style: AppTextStyles.heading3,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            err.toString(),
+                            style: AppTextStyles.body,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () =>
+                                ref.read(goalsProvider.notifier).refresh(),
+                            child: const Text('Reintentar'),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -335,6 +339,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   }
 
   Widget _buildGoalCard(Goal goal) {
+    final hideAmounts = ref.watch(privacySettingsProvider).hideAmounts;
     final icon = _getGoalIcon(goal.nombre);
     return Container(
       decoration: BoxDecoration(
@@ -404,7 +409,10 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                           style: TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         Text(
-                          'S/ ${goal.saldoAcumulado.toStringAsFixed(2)}',
+                          privacyAmount(
+                            goal.saldoAcumulado,
+                            hidden: hideAmounts,
+                          ),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 24,
@@ -421,7 +429,10 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                           style: TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         Text(
-                          'S/ ${goal.montoObjetivo.toStringAsFixed(2)}',
+                          privacyAmount(
+                            goal.montoObjetivo,
+                            hidden: hideAmounts,
+                          ),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -455,7 +466,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                       ),
                     ),
                     Text(
-                      'Faltan S/ ${(goal.montoObjetivo - goal.saldoAcumulado).clamp(0, double.infinity).toStringAsFixed(2)}',
+                      'Faltan ${privacyAmount((goal.montoObjetivo - goal.saldoAcumulado).clamp(0, double.infinity), hidden: hideAmounts)}',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 12,
