@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/goal.dart';
 import '../../data/repositories/goal_repository.dart';
 import 'budget_provider.dart';
@@ -47,3 +47,4 @@ class GoalsNotifier extends AsyncNotifier<List<Goal>> {
 final goalsProvider = AsyncNotifierProvider<GoalsNotifier, List<Goal>>(
   GoalsNotifier.new,
 );
+

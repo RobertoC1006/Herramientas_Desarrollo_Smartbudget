@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
+import '../theme/adaptive_colors.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
@@ -20,7 +21,7 @@ Future<bool> showBudgetOverflowDialog({
           constraints: const BoxConstraints(maxWidth: 420),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.financeSurface,
             borderRadius: BorderRadius.circular(28),
             boxShadow: const [
               BoxShadow(
@@ -54,23 +55,23 @@ Future<bool> showBudgetOverflowDialog({
               Text(
                 'Presupuesto superado',
                 style: AppTextStyles.heading3.copyWith(
-                  color: AppColors.textPrimary,
+                  color: context.financeText,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Este gasto haria que superes tu saldo disponible del mes.',
                 style: AppTextStyles.body.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.financeTextSecondary,
                 ),
               ),
               const SizedBox(height: 20),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.background,
+                  color: context.financeSurfaceSoft,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.financeBorder),
                 ),
                 child: Column(
                   children: [
@@ -101,7 +102,7 @@ Future<bool> showBudgetOverflowDialog({
                       child: TextButton(
                         onPressed: () => Navigator.of(context).pop(false),
                         style: TextButton.styleFrom(
-                          foregroundColor: AppColors.textSecondary,
+                          foregroundColor: context.financeTextSecondary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -165,10 +166,11 @@ class _BudgetWarningRow extends StatelessWidget {
         Text(
           value,
           style: AppTextStyles.label.copyWith(
-            color: isDanger ? AppColors.danger : AppColors.textPrimary,
+            color: isDanger ? AppColors.danger : context.financeText,
           ),
         ),
       ],
     );
   }
 }
+

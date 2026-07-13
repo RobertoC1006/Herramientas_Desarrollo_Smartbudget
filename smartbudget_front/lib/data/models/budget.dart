@@ -1,4 +1,4 @@
-class Budget {
+﻿class Budget {
   final int id;
   final int userId;
   final int mes;
@@ -93,3 +93,4 @@ class BudgetSummary {
     };
   }
 }
+

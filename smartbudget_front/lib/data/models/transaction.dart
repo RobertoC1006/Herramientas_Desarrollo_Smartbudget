@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/utils/category_utils.dart';
 
 class TransactionItem {
@@ -25,15 +25,19 @@ class TransactionItem {
   });
 
   factory TransactionItem.fromExpenseJson(Map<String, dynamic> json) {
-    final String category = _mapBackendCategoryToFrontend(json['categoria'] as String);
+    final String category = _mapBackendCategoryToFrontend(
+      json['categoria'] as String,
+    );
     final info = CategoryUtils.getCategoryInfo(category);
     final String idStr = json['id'].toString();
-    
+
     // Si hay descripción, la usamos como título. Si no, usamos el comercio. Si tampoco hay, la categoría.
     String titleStr = category;
-    if (json['descripcion'] != null && (json['descripcion'] as String).trim().isNotEmpty) {
+    if (json['descripcion'] != null &&
+        (json['descripcion'] as String).trim().isNotEmpty) {
       titleStr = json['descripcion'] as String;
-    } else if (json['comercio'] != null && (json['comercio'] as String).trim().isNotEmpty) {
+    } else if (json['comercio'] != null &&
+        (json['comercio'] as String).trim().isNotEmpty) {
       titleStr = json['comercio'] as String;
     }
 
@@ -42,7 +46,7 @@ class TransactionItem {
     try {
       parsedDate = DateTime.parse(json['fecha'] as String);
     } catch (_) {
-      parsedDate = json['created_at'] != null 
+      parsedDate = json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now();
     }
@@ -72,9 +76,10 @@ class TransactionItem {
         return 'Salud';
       case 'educacion':
         return 'Educación';
+      case 'hogar':
+        return 'Servicios';
       case 'otros':
       case 'ropa':
-      case 'hogar':
       case 'tecnologia':
       case 'viajes':
       default:
@@ -94,9 +99,12 @@ class TransactionItem {
         return 'salud';
       case 'Educación':
         return 'educacion';
+      case 'Servicios':
+        return 'hogar';
       case 'Otros':
       default:
         return 'otros';
     }
   }
 }
+

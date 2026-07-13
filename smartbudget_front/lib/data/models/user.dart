@@ -1,4 +1,4 @@
-class User {
+﻿class User {
   final int id;
   final String nombre;
   final String email;
@@ -65,3 +65,4 @@ class UserResponse {
     return UserResponse(user: User.fromJson(json));
   }
 }
+

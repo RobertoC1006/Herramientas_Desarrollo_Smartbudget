@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 
 import '../../core/api_client.dart';
 import '../models/smart_alert.dart';
@@ -7,7 +7,7 @@ class AlertsRepository {
   final ApiClient apiClient;
 
   AlertsRepository({ApiClient? apiClient})
-      : apiClient = apiClient ?? ApiClient();
+    : apiClient = apiClient ?? ApiClient();
 
   Future<List<SmartAlert>> fetchAlerts() async {
     try {
@@ -47,3 +47,4 @@ class AlertsRepository {
     return 'Error en la solicitud de alertas.';
   }
 }
+

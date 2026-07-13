@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 
 import '../../core/api_client.dart';
 import '../models/goal.dart';
@@ -6,14 +6,15 @@ import '../models/goal.dart';
 class GoalRepository {
   final ApiClient apiClient;
 
-  GoalRepository({ApiClient? apiClient})
-      : apiClient = apiClient ?? ApiClient();
+  GoalRepository({ApiClient? apiClient}) : apiClient = apiClient ?? ApiClient();
 
   Future<List<Goal>> fetchGoals() async {
     try {
       final response = await apiClient.dio.get('/api/goals/');
       final list = response.data as List<dynamic>;
-      return list.map((json) => Goal.fromJson(json as Map<String, dynamic>)).toList();
+      return list
+          .map((json) => Goal.fromJson(json as Map<String, dynamic>))
+          .toList();
     } on DioException catch (e) {
       throw Exception(_handleDioError(e));
     }
@@ -23,10 +24,7 @@ class GoalRepository {
     try {
       final response = await apiClient.dio.post(
         '/api/goals/',
-        data: {
-          'nombre': name,
-          'monto_objetivo': targetAmount,
-        },
+        data: {'nombre': name, 'monto_objetivo': targetAmount},
       );
       return Goal.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -38,9 +36,7 @@ class GoalRepository {
     try {
       await apiClient.dio.post(
         '/api/goals/$goalId/contribute',
-        data: {
-          'monto': amount,
-        },
+        data: {'monto': amount},
       );
     } on DioException catch (e) {
       throw Exception(_handleDioError(e));
@@ -56,3 +52,4 @@ class GoalRepository {
     return 'Error en la solicitud de metas de ahorro.';
   }
 }
+

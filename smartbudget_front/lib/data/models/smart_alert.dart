@@ -1,4 +1,4 @@
-import 'enums.dart';
+﻿import 'enums.dart';
 
 class SmartAlert {
   final int id;
@@ -43,3 +43,4 @@ class SmartAlert {
     };
   }
 }
+
