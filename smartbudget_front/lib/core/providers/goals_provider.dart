@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/goal.dart';
 import '../../data/repositories/goal_repository.dart';
 import 'budget_provider.dart';
@@ -29,13 +29,22 @@ class GoalsNotifier extends AsyncNotifier<List<Goal>> {
   }
 
   Future<void> addContribution(int goalId, double amount) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    final previousGoals = state.maybeWhen<List<Goal>?>(
+      data: (goals) => goals,
+      orElse: () => null,
+    );
+
+    try {
       await _repository.contributeToGoal(goalId, amount);
       // Refrescar el presupuesto ya que se resta del saldo disponible del mes actual
       ref.read(budgetProvider.notifier).refresh();
-      return _loadGoals();
-    });
+      state = AsyncValue.data(await _loadGoals());
+    } catch (error, stackTrace) {
+      if (previousGoals != null) {
+        state = AsyncValue.data(previousGoals);
+      }
+      Error.throwWithStackTrace(error, stackTrace);
+    }
   }
 
   Future<void> refresh() async {
@@ -47,4 +56,3 @@ class GoalsNotifier extends AsyncNotifier<List<Goal>> {
 final goalsProvider = AsyncNotifierProvider<GoalsNotifier, List<Goal>>(
   GoalsNotifier.new,
 );
-

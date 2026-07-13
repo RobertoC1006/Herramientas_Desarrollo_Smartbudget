@@ -15,8 +15,15 @@ import '../expenses/add_expense_page.dart' show TransactionTile;
 
 class AnalysisPage extends ConsumerStatefulWidget {
   final int historyFocusRequest;
+  final bool isActive;
+  final VoidCallback? onHistoryFocusHandled;
 
-  const AnalysisPage({super.key, this.historyFocusRequest = 0});
+  const AnalysisPage({
+    super.key,
+    this.historyFocusRequest = 0,
+    this.isActive = false,
+    this.onHistoryFocusHandled,
+  });
 
   @override
   ConsumerState<AnalysisPage> createState() => _AnalysisPageState();
@@ -24,9 +31,11 @@ class AnalysisPage extends ConsumerStatefulWidget {
 
 class _AnalysisPageState extends ConsumerState<AnalysisPage> {
   final GlobalKey _historySectionKey = GlobalKey();
+  final ScrollController _scrollController = ScrollController();
   String? _selectedCategoryToReduce;
   double _reductionPercentage = 25.0;
-  late int _lastHistoryFocusRequest;
+  int _lastHandledHistoryFocusRequest = 0;
+  bool _historyFocusScheduled = false;
 
   final List<Color> _chartColors = [
     AppColors.primary,
@@ -40,33 +49,69 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
   @override
   void initState() {
     super.initState();
-    _lastHistoryFocusRequest = widget.historyFocusRequest;
-    if (widget.historyFocusRequest > 0) {
-      _scrollToHistorySection();
-    }
+    _scheduleHistoryFocusIfNeeded();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
   void didUpdateWidget(covariant AnalysisPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.historyFocusRequest != _lastHistoryFocusRequest) {
-      _lastHistoryFocusRequest = widget.historyFocusRequest;
-      _scrollToHistorySection();
-    }
+    _scheduleHistoryFocusIfNeeded();
   }
 
-  void _scrollToHistorySection() {
+  void _scheduleHistoryFocusIfNeeded() {
+    if (!widget.isActive ||
+        widget.historyFocusRequest <= 0 ||
+        widget.historyFocusRequest == _lastHandledHistoryFocusRequest ||
+        _historyFocusScheduled) {
+      return;
+    }
+
+    _historyFocusScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _historyFocusScheduled = false;
+      if (!mounted ||
+          !widget.isActive ||
+          widget.historyFocusRequest <= 0 ||
+          widget.historyFocusRequest == _lastHandledHistoryFocusRequest) {
+        return;
+      }
+
       final historyContext = _historySectionKey.currentContext;
       if (historyContext == null) return;
 
-      Scrollable.ensureVisible(
-        historyContext,
+      final historyObject = historyContext.findRenderObject();
+      final scrollable = Scrollable.maybeOf(historyContext);
+      if (historyObject == null || scrollable == null) return;
+
+      _lastHandledHistoryFocusRequest = widget.historyFocusRequest;
+      scrollable.position.ensureVisible(
+        historyObject,
         duration: const Duration(milliseconds: 520),
         curve: Curves.easeOutCubic,
         alignment: 0.05,
-      );
+      ).whenComplete(() {
+        if (!mounted ||
+            widget.historyFocusRequest != _lastHandledHistoryFocusRequest) {
+          return;
+        }
+        widget.onHistoryFocusHandled?.call();
+      });
     });
+  }
+
+  void _retryPendingHistoryFocus() {
+    if (!widget.isActive ||
+        widget.historyFocusRequest <= 0 ||
+        widget.historyFocusRequest == _lastHandledHistoryFocusRequest) {
+      return;
+    }
+    _scheduleHistoryFocusIfNeeded();
   }
 
   @override
@@ -98,6 +143,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
         ),
       ),
       data: (transactions) {
+        _retryPendingHistoryFocus();
         final expenses = transactions.where((t) => !t.isIncome).toList();
 
         // Calculate expenses by category
@@ -123,6 +169,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
           body: FinanceBackground(
             child: SafeArea(
               child: SingleChildScrollView(
+                controller: _scrollController,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 20,

@@ -261,7 +261,10 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                                   const SizedBox(height: 20),
                               itemBuilder: (context, index) {
                                 final goal = goals[index];
-                                return _buildGoalCard(goal);
+                                return KeyedSubtree(
+                                  key: ValueKey(goal.id),
+                                  child: _buildGoalCard(goal),
+                                );
                               },
                             ),
                           ),
@@ -341,6 +344,12 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   Widget _buildGoalCard(Goal goal) {
     final hideAmounts = ref.watch(privacySettingsProvider).hideAmounts;
     final icon = _getGoalIcon(goal.nombre);
+    final progress = goal.progreso.clamp(0.0, 1.0);
+    final remaining = (goal.montoObjetivo - goal.saldoAcumulado).clamp(
+      0.0,
+      double.infinity,
+    );
+
     return Container(
       decoration: BoxDecoration(
         color: context.financeSurface,
@@ -408,11 +417,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                           'Progreso',
                           style: TextStyle(color: Colors.white70, fontSize: 12),
                         ),
-                        Text(
-                          privacyAmount(
-                            goal.saldoAcumulado,
-                            hidden: hideAmounts,
-                          ),
+                        _AnimatedGoalAmount(
+                          value: goal.saldoAcumulado,
+                          hidden: hideAmounts,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 24,
@@ -428,11 +435,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                           'Objetivo',
                           style: TextStyle(color: Colors.white70, fontSize: 12),
                         ),
-                        Text(
-                          privacyAmount(
-                            goal.montoObjetivo,
-                            hidden: hideAmounts,
-                          ),
+                        _AnimatedGoalAmount(
+                          value: goal.montoObjetivo,
+                          hidden: hideAmounts,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -445,28 +450,42 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                 const SizedBox(height: 16),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: goal.progreso,
-                    minHeight: 8,
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Colors.white,
-                    ),
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween<double>(end: progress),
+                    duration: const Duration(milliseconds: 720),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, value, _) {
+                      return LinearProgressIndicator(
+                        value: value,
+                        minHeight: 8,
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Colors.white,
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '${(goal.progreso * 100).toInt()}% completado',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween<double>(end: progress * 100),
+                      duration: const Duration(milliseconds: 720),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, _) {
+                        return Text(
+                          '${value.round()}% completado',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
                     ),
                     Text(
-                      'Faltan ${privacyAmount((goal.montoObjetivo - goal.saldoAcumulado).clamp(0, double.infinity), hidden: hideAmounts)}',
+                      'Faltan ${privacyAmount(remaining, hidden: hideAmounts)}',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 12,
@@ -729,6 +748,43 @@ class _AddGoalDialogState extends State<_AddGoalDialog> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AnimatedGoalAmount extends StatelessWidget {
+  final double value;
+  final bool hidden;
+  final TextStyle style;
+
+  const _AnimatedGoalAmount({
+    required this.value,
+    required this.hidden,
+    required this.style,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (hidden) {
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeOutCubic,
+        child: Text(
+          privacyAmount(value, hidden: true),
+          key: const ValueKey('hidden_amount'),
+          style: style,
+        ),
+      );
+    }
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: value),
+      duration: const Duration(milliseconds: 720),
+      curve: Curves.easeOutCubic,
+      builder: (context, animatedValue, _) {
+        return Text(privacyAmount(animatedValue, hidden: false), style: style);
+      },
     );
   }
 }
