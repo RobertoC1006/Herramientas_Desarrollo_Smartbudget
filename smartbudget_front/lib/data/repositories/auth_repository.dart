@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 
 import '../../core/api_client.dart';
 import '../../core/token_storage.dart';
@@ -16,13 +16,8 @@ class AuthRepository {
     try {
       final response = await apiClient.dio.post(
         '/api/auth/login',
-        data: {
-          'username': email,
-          'password': password,
-        },
-        options: Options(
-          contentType: Headers.formUrlEncodedContentType,
-        ),
+        data: {'username': email, 'password': password},
+        options: Options(contentType: Headers.formUrlEncodedContentType),
       );
 
       final tokenResponse = TokenResponse.fromJson(
@@ -92,3 +87,4 @@ class AuthRepository {
     return 'No se pudo completar la solicitud.';
   }
 }
+

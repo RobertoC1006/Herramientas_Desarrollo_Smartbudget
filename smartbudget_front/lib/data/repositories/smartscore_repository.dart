@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 
 import '../../core/api_client.dart';
 import '../models/smart_core_snapshot.dart';
@@ -7,7 +7,7 @@ class SmartScoreRepository {
   final ApiClient apiClient;
 
   SmartScoreRepository({ApiClient? apiClient})
-      : apiClient = apiClient ?? ApiClient();
+    : apiClient = apiClient ?? ApiClient();
 
   Future<int> fetchCurrentScore() async {
     try {
@@ -27,7 +27,9 @@ class SmartScoreRepository {
       );
       final list = response.data as List<dynamic>;
       return list
-          .map((json) => SmartScoreSnapshot.fromJson(json as Map<String, dynamic>))
+          .map(
+            (json) => SmartScoreSnapshot.fromJson(json as Map<String, dynamic>),
+          )
           .toList();
     } on DioException catch (e) {
       throw Exception(_handleDioError(e));
@@ -43,3 +45,4 @@ class SmartScoreRepository {
     return 'Error en la solicitud de SmartScore.';
   }
 }
+

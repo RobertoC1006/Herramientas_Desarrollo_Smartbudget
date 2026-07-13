@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/smart_core_snapshot.dart';
 import '../../data/repositories/smartscore_repository.dart';
@@ -22,7 +22,8 @@ class SmartScoreNotifier extends AsyncNotifier<int> {
     } catch (e) {
       final errStr = e.toString();
       // Si no hay presupuesto o datos, puede fallar con 404, retornamos un score default de 0
-      if (errStr.contains('404') || errStr.toLowerCase().contains('no se encontró')) {
+      if (errStr.contains('404') ||
+          errStr.toLowerCase().contains('no se encontró')) {
         return 0;
       }
       rethrow;
@@ -35,7 +36,8 @@ class SmartScoreNotifier extends AsyncNotifier<int> {
   }
 }
 
-class SmartScoreHistoryNotifier extends AsyncNotifier<List<SmartScoreSnapshot>> {
+class SmartScoreHistoryNotifier
+    extends AsyncNotifier<List<SmartScoreSnapshot>> {
   late final SmartScoreRepository _repository;
 
   @override
@@ -49,7 +51,8 @@ class SmartScoreHistoryNotifier extends AsyncNotifier<List<SmartScoreSnapshot>> 
       return await _repository.fetchHistory(meses: 6);
     } catch (e) {
       final errStr = e.toString();
-      if (errStr.contains('404') || errStr.toLowerCase().contains('no se encontró')) {
+      if (errStr.contains('404') ||
+          errStr.toLowerCase().contains('no se encontró')) {
         return [];
       }
       rethrow;
@@ -66,6 +69,8 @@ final smartScoreProvider = AsyncNotifierProvider<SmartScoreNotifier, int>(
   SmartScoreNotifier.new,
 );
 
-final smartScoreHistoryProvider = AsyncNotifierProvider<SmartScoreHistoryNotifier, List<SmartScoreSnapshot>>(
-  SmartScoreHistoryNotifier.new,
-);
+final smartScoreHistoryProvider =
+    AsyncNotifierProvider<SmartScoreHistoryNotifier, List<SmartScoreSnapshot>>(
+      SmartScoreHistoryNotifier.new,
+    );
+

@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/transaction.dart';
 import '../../data/repositories/expense_repository.dart';
 import 'budget_provider.dart';
@@ -70,5 +70,6 @@ class TransactionsNotifier extends AsyncNotifier<List<TransactionItem>> {
 
 final transactionsProvider =
     AsyncNotifierProvider<TransactionsNotifier, List<TransactionItem>>(
-  TransactionsNotifier.new,
-);
+      TransactionsNotifier.new,
+    );
+

@@ -1,4 +1,4 @@
-import 'enums.dart';
+﻿import 'enums.dart';
 
 class Expense {
   final int id;
@@ -61,3 +61,4 @@ class Expense {
     };
   }
 }
+

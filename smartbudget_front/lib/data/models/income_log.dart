@@ -1,4 +1,4 @@
-class IncomeLog {
+﻿class IncomeLog {
   final int id;
   final int userId;
   final int budgetId;
@@ -37,3 +37,4 @@ class IncomeLog {
     };
   }
 }
+

@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 
 import '../../core/api_client.dart';
 import '../models/budget.dart';
@@ -7,7 +7,7 @@ class BudgetRepository {
   final ApiClient apiClient;
 
   BudgetRepository({ApiClient? apiClient})
-      : apiClient = apiClient ?? ApiClient();
+    : apiClient = apiClient ?? ApiClient();
 
   Future<Budget> createBudget({
     required double montoBase,
@@ -45,10 +45,7 @@ class BudgetRepository {
     try {
       final response = await apiClient.dio.post(
         '/api/budgets/income',
-        data: {
-          'monto': monto,
-          'descripcion': descripcion,
-        },
+        data: {'monto': monto, 'descripcion': descripcion},
       );
       return Budget.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -65,3 +62,4 @@ class BudgetRepository {
     return 'Error en la solicitud de presupuesto.';
   }
 }
+

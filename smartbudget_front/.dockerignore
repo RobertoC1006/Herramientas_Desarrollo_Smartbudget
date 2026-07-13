@@ -1,0 +1,15 @@
+.dart_tool/
+.idea/
+.github/
+build/
+ui_preview/
+
+android/.gradle/
+ios/Pods/
+macos/Pods/
+
+*.iml
+*.log
+.metadata
+.flutter-plugins
+.flutter-plugins-dependencies
