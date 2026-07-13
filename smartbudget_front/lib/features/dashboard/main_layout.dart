@@ -32,6 +32,7 @@ class _MainLayoutState extends ConsumerState<MainLayout>
   late final PageController _pageController;
   int _currentIndex = 0;
   int _analysisHistoryFocusRequest = 0;
+  bool _analysisHistoryFocusPending = false;
 
   @override
   void initState() {
@@ -59,6 +60,9 @@ class _MainLayoutState extends ConsumerState<MainLayout>
 
     setState(() {
       _currentIndex = index;
+      if (index != 3) {
+        _analysisHistoryFocusPending = false;
+      }
     });
 
     if (!_pageController.hasClients) return;
@@ -76,8 +80,24 @@ class _MainLayoutState extends ConsumerState<MainLayout>
   void _openAnalysisHistory() {
     setState(() {
       _analysisHistoryFocusRequest++;
+      _analysisHistoryFocusPending = true;
+      _currentIndex = 3;
     });
-    _goToTab(3);
+
+    if (!_pageController.hasClients) return;
+    _pageController.animateToPage(
+      3,
+      duration: _pageTransitionDuration,
+      curve: _pageTransitionCurve,
+    );
+  }
+
+  void _handleAnalysisHistoryFocusHandled() {
+    if (!_analysisHistoryFocusPending) return;
+
+    setState(() {
+      _analysisHistoryFocusPending = false;
+    });
   }
 
   @override
@@ -98,7 +118,13 @@ class _MainLayoutState extends ConsumerState<MainLayout>
               ),
               const AddExpensePage(),
               const GoalsPage(),
-              AnalysisPage(historyFocusRequest: _analysisHistoryFocusRequest),
+              AnalysisPage(
+                historyFocusRequest: _analysisHistoryFocusPending
+                    ? _analysisHistoryFocusRequest
+                    : 0,
+                isActive: _currentIndex == 3,
+                onHistoryFocusHandled: _handleAnalysisHistoryFocusHandled,
+              ),
               const ProfilePage(),
             ],
           ),
