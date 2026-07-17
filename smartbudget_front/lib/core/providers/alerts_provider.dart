@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/smart_alert.dart';
 import '../../data/repositories/alerts_repository.dart';
@@ -50,7 +50,7 @@ class AlertsNotifier extends AsyncNotifier<List<SmartAlert>> {
       }
       return a;
     }).toList();
-    
+
     state = AsyncValue.data(updatedList);
 
     try {
@@ -71,3 +71,4 @@ class AlertsNotifier extends AsyncNotifier<List<SmartAlert>> {
 final alertsProvider = AsyncNotifierProvider<AlertsNotifier, List<SmartAlert>>(
   AlertsNotifier.new,
 );
+

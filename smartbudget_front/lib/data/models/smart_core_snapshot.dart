@@ -1,4 +1,4 @@
-class SmartScoreSnapshot {
+﻿class SmartScoreSnapshot {
   final int id;
   final int userId;
   final int budgetId;
@@ -21,7 +21,10 @@ class SmartScoreSnapshot {
 
   factory SmartScoreSnapshot.fromJson(Map<String, dynamic> json) {
     // El backend puede enviar fecha_calculo (en SnapshotHistoryResponse) o calculado_en
-    final fechaStr = json['fecha_calculo'] ?? json['calculado_en'] ?? DateTime.now().toIso8601String();
+    final fechaStr =
+        json['fecha_calculo'] ??
+        json['calculado_en'] ??
+        DateTime.now().toIso8601String();
     final fecha = DateTime.parse(fechaStr as String);
 
     return SmartScoreSnapshot(
@@ -51,3 +54,4 @@ class SmartScoreSnapshot {
     };
   }
 }
+

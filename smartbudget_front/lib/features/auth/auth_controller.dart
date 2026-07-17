@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/user.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -62,3 +62,4 @@ class AuthController extends AsyncNotifier<User?> {
     state = const AsyncValue.data(null);
   }
 }
+

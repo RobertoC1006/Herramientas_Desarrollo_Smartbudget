@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 
 from db.models import Base, User, Budget, Goal, Expense, Alert, SmartScoreSnapshot
 from core.enums import CategoriaGasto, EstadoMeta, FuenteGasto, TipoAlerta
-from core.exceptions import SaldoInsuficienteError, GastoNoEncontradoError
+from core.exceptions import GastoNoEncontradoError
 from core.budgets import crear_presupuesto_mes
 from core.goals import crear_meta
 from core.expenses import registrar_gasto, eliminar_gasto, listar_gastos_mes, calcular_gastos_por_categoria
@@ -68,22 +68,27 @@ class TestExpenses:
         assert budget.saldo_disponible == 800.0
         assert budget.total_gastado == 200.0
 
-    def test_registrar_gasto_saldo_insuficiente(self, db):
+    def test_registrar_gasto_supera_presupuesto(self, db):
         # 1. Arrange
         hoy = date.today()
         crear_presupuesto_mes(db, user_id=1, monto_base=100, mes=hoy.month, anio=hoy.year)
-        
-        # 2. Act & Assert: Intentar gastar S/. 150
-        with pytest.raises(SaldoInsuficienteError):
-            registrar_gasto(
-                db, 
-                user_id=1, 
-                categoria=CategoriaGasto.OTROS, 
-                monto=150.0, 
-                descripcion="Gasto extra", 
-                comercio=None, 
-                fecha=date(hoy.year, hoy.month, 10)
-            )
+
+        # 2. Act: Registrar un gasto que supera el disponible.
+        gasto = registrar_gasto(
+            db,
+            user_id=1,
+            categoria=CategoriaGasto.OTROS,
+            monto=150.0,
+            descripcion="Gasto extra",
+            comercio=None,
+            fecha=date(hoy.year, hoy.month, 10),
+        )
+
+        # 3. Assert: El gasto se permite y el saldo queda en negativo.
+        budget = db.query(Budget).filter(Budget.user_id == 1).first()
+        assert gasto.id is not None
+        assert budget.saldo_disponible == -50.0
+        assert budget.total_gastado == 150.0
 
     def test_eliminar_gasto_exito(self, db):
         # 1. Arrange
